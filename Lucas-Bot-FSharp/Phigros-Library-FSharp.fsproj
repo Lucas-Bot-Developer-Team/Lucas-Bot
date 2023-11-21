@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <PlatformTarget>ARM64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="PhigrosAPIException.fs" />
+    <Compile Include="ScoreUtils.fs" />
+    <Compile Include="AssetsHelper.fs" />
+    <Compile Include="GameSave.fs" />
+    <Compile Include="GameSaveAnalyzer.fs" />
+    <Compile Include="GameSaveUtil.fs" />
+    <Compile Include="PhigrosAPIHandler.fs" />
+    <Compile Include="PhigrosBestImageGenerator.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Flurl.Http" Version="3.2.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
+    <PackageReference Include="SharpCompress" Version="0.34.1" />
+    <PackageReference Include="SkiaSharp" Version="2.88.6" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.6" />
+    <PackageReference Include="YamlDotNet" Version="13.7.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="7.0.0.0" />
+  </ItemGroup>
+
+</Project>
