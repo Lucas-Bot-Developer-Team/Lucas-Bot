@@ -15,7 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Lucas-Bot-FSharp\Phigros-Library-FSharp.fsproj" />
+      <ProjectReference Include="..\Phigros-Library-FSharp\Phigros-Library-FSharp.fsproj" />
     </ItemGroup>
 
 </Project>
