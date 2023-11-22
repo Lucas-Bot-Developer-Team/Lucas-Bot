@@ -2,12 +2,6 @@
 using EleCho.GoCqHttpSdk.Message;
 using Lucas_Bot_OneBot.Core;
 using Lucas_Bot_OneBot.Entities;
-using SkiaSharp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Lucas_Bot_OneBot.Modules.Amusement;
 

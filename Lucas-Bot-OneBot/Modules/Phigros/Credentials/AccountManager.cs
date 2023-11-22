@@ -6,7 +6,6 @@ using Lucas_Bot_OneBot.Entities;
 using Lucas_Bot_OneBot.Helpers;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using static PhigrosAPIHandler;
 
 namespace Lucas_Bot_OneBot.Modules.Phigros.Credentials;
 
