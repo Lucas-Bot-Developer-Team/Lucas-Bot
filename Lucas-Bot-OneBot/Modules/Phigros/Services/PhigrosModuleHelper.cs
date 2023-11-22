@@ -1,4 +1,4 @@
-namespace Lucas_Bot_OneBot.Modules.Phigros;
+namespace Lucas_Bot_OneBot.Modules.Phigros.Services;
 
 using EleCho.GoCqHttpSdk;
 using EleCho.GoCqHttpSdk.Message;

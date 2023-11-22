@@ -4,7 +4,7 @@ using Lucas_Bot_OneBot.Core;
 using Lucas_Bot_OneBot.Entities;
 using SkiaSharp;
 
-namespace Lucas_Bot_OneBot.Modules.Phigros;
+namespace Lucas_Bot_OneBot.Modules.Phigros.Services;
 
 internal static class AssetsHelpers
 {

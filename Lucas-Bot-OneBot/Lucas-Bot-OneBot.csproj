@@ -21,13 +21,13 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="log4net.config">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
+      <ProjectReference Include="..\Phigros-Library-FSharp\Phigros-Library-FSharp.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Lucas-Bot-FSharp\Phigros-Library-FSharp.fsproj" />
+      <None Update="log4net.config">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

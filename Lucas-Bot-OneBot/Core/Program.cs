@@ -5,9 +5,12 @@ using log4net;
 using Lucas_Bot_OneBot.Helpers;
 using Lucas_Bot_OneBot.Modules.Amusement;
 using Lucas_Bot_OneBot.Modules.Phigros.Credentials;
-using Lucas_Bot_OneBot.Modules.Phigros;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Lucas_Bot_OneBot.Entities;
+using Lucas_Bot_OneBot.Modules.Phigros.Services;
+using System.Xml.Serialization;
+using Amazon.Util.Internal;
 
 internal class Program
 {
@@ -22,24 +25,53 @@ internal class Program
     });
 
     // 初始化正向HTTP连接
-    public static CqHttpSession HttpSession { get; private set; } = new(new CqHttpSessionOptions()
-    {
-        BaseUri = new Uri("http://192.168.31.101:5700")
-    });
+    public static CqHttpSession HttpSession { get; private set; } = new(new CqHttpSessionOptions());
 
     private static Stopwatch StopWatch { get; } = new Stopwatch();
 
     public static async Task Main(string[] args)
     {
         Logger.Info("Log4Net 已配置");
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        var isInDebugMode = false;
+
+        if (args.Contains("-g") || args.Contains("--generate-config-file"))
+        {
+            BotConfig.GenerateBotConfigFileSample();
+            Logger.Info("默认配置文件已生成，请根据实际使用修改");
+            return;
+        }
+
+        // 从config.xml 读取配置信息
+        if (File.Exists("config.xml"))
+        {
+            try
+            {
+                var config = new XmlSerializer(typeof(BotConfig))
+                                .Deserialize(File.OpenRead("config.xml")) as BotConfig;
+                isInDebugMode = config!.IsInDebugMode;
+                HttpSession = new(new CqHttpSessionOptions()
+                {
+                    BaseUri = new Uri(config!.HttpSessionProvider)
+                });
+            }
+            catch (Exception ex) 
+            {
+                Logger.Error("读取配置文件时出现异常", ex);
+                Environment.Exit(1);
+            }
+        }
+        else
+        {
+            Logger.Error("配置文件不存在");
+            Logger.Warn("请执行 dotnet Lucas-Bot-OneBot.dll --generate-config-file 生成配置文件");
+            Logger.Warn("并修改后命名为 config.xml, 放置在可执行文件根目录下");
+            Environment.Exit(1);
+        }
+
+        if (isInDebugMode)
         {
             Logger.Warn("处于调试环境中，正在应用调试配置");
             Logger.Warn("调试时请关闭 Windows 防火墙");
-            HttpSession = new(new CqHttpSessionOptions()
-            {
-                BaseUri = new Uri("http://192.168.31.105:5700")
-            });
 
             CommandBuilder.RegisterCommandPrefix('/');
         }
