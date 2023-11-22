@@ -1,6 +1,3 @@
-using System.Runtime.InteropServices;
-using EleCho.GoCqHttpSdk;
-using EleCho.GoCqHttpSdk.Message;
 using EleCho.GoCqHttpSdk.Post;
 using Lucas_Bot_OneBot.Entities;
 

@@ -6,11 +6,9 @@ using Lucas_Bot_OneBot.Helpers;
 using Lucas_Bot_OneBot.Modules.Amusement;
 using Lucas_Bot_OneBot.Modules.Phigros.Credentials;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Lucas_Bot_OneBot.Entities;
 using Lucas_Bot_OneBot.Modules.Phigros.Services;
 using System.Xml.Serialization;
-using Amazon.Util.Internal;
 
 internal class Program
 {
@@ -54,7 +52,7 @@ internal class Program
                     BaseUri = new Uri(config!.HttpSessionProvider)
                 });
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 Logger.Error("读取配置文件时出现异常", ex);
                 Environment.Exit(1);

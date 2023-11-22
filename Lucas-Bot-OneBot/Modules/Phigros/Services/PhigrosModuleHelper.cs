@@ -5,7 +5,6 @@ using EleCho.GoCqHttpSdk.Message;
 using System.Text;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using SkiaSharp;
 using static PhigrosBestImageGenerator;
 using static PhigrosAPIHandler;
 using static GameSaveAnalyzer;
