@@ -440,4 +440,126 @@ public static class PhigrosModuleHelper
 
         logger.Info($"acc 查询状态：{suggestsState}");
     }
+
+    public static async void BatchProcessor(Command commandInfo)
+    {
+        var logger = Program.Logger;
+        var batchState = PhigrosModuleOperationState.SUCCESS;
+        var hintMessage = "";
+        var prescribedMinimum = 0f;
+        var superiorLimit = prescribedMinimum;
+
+        if (commandInfo.Parameters.Count != 1 && commandInfo.Parameters.Count != 2) 
+        {
+            batchState = PhigrosModuleOperationState.ERR_INSTRUCTION_FORMAT;
+        }
+        else
+        {
+            try
+            {
+                prescribedMinimum = float.Parse(commandInfo.Parameters[0]);
+                superiorLimit = prescribedMinimum;
+                if (commandInfo.Parameters.Count == 2)
+                {
+                    superiorLimit = float.Parse(commandInfo.Parameters[1]);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error("发生异常: ", ex);
+                hintMessage = ex.Message;
+                batchState = PhigrosModuleOperationState.ERR_INSTRUCTION_FORMAT;
+            }
+        }
+
+        logger.Info($"{CommandBuilder.DefaultCommandSuffix}batch指令被唤起，使用者：{commandInfo.SenderId}");
+        var collection = Utilities.GetCollection("phi", "sessionToken");
+        var queryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("qq", commandInfo.SenderId.ToString()));
+        logger.Info("从数据库中查询SessionToken");
+        if (!await queryResult.AnyAsync())
+            batchState = PhigrosModuleOperationState.ERR_NOT_BOUND;
+        if (batchState == PhigrosModuleOperationState.SUCCESS)
+        {
+            logger.Info("已查询到SessionToken, 准备进入FSharp层");
+            var sessionToken = queryResult.First()["sessionToken"].ToString();
+            var phigrosUser = new PhigrosUser(sessionToken);
+
+            try
+            {
+                var playRecords = await WrapFSharpAsync(phigrosUser.getPlayRecordList());
+                var batchRecords = GetPlayRecordsBatch(prescribedMinimum, superiorLimit, playRecords);
+                var count = batchRecords.Count();
+                var stringBuilder = new StringBuilder($"[批量查分结果]\n");
+
+                if (count != 0)
+                {
+                    var i = 1;
+                    foreach (var playRecord in batchRecords)
+                    {
+                        stringBuilder.Append(
+                            $"{FormatPlayRecord(playRecord, playRecords)}{(i++ == count ? '\0' : '\n')}");
+                    }
+                }
+                else
+                {
+                    stringBuilder.Append("该定数范围内您未游玩过歌曲");
+                }
+
+                hintMessage = stringBuilder.ToString();
+                logger.Info("玩家信息查询成功，已从FSharp层退出");
+            }
+            catch (PhigrosAPIException.PhigrosAPIException e)
+            {
+                logger.Error("FSharp层出现异常", e);
+                hintMessage = $"[PhigrosAPIException]\n{e.Data0}";
+                batchState = PhigrosModuleOperationState.ERR_INTERNAL;
+            }
+            catch (Exception e)
+            {
+                logger.Error("出现其他异常：", e);
+                hintMessage = e.Message;
+                batchState = PhigrosModuleOperationState.ERR_INTERNAL;
+            }
+        }
+
+        hintMessage = batchState switch
+        {
+            PhigrosModuleOperationState.SUCCESS => hintMessage,
+            PhigrosModuleOperationState.ERR_NOT_BOUND => $"您未绑定。请先使用{CommandBuilder.DefaultCommandSuffix}bind指令完成绑定。",
+            PhigrosModuleOperationState.ERR_INTERNAL => hintMessage,
+            PhigrosModuleOperationState.ERR_INSTRUCTION_FORMAT => $"指令格式错误，应为{CommandBuilder.DefaultCommandSuffix}batch 定数下限 <定数上限（可选）>",
+            _ => throw new ArgumentOutOfRangeException(nameof(commandInfo))
+        };
+
+        try
+        {
+            if (batchState == PhigrosModuleOperationState.SUCCESS)
+            {
+                try
+                {
+                    await Program.HttpSession.SendPrivateMessageAsync(commandInfo.SenderId, new CqMessage(hintMessage));
+                    if (commandInfo.MessageType == CqMessageType.Group)
+                        await Program.HttpSession.SendGroupMessageAsync(commandInfo.GroupId!.Value, new CqMessage(
+                            new CqReplyMsg(commandInfo.MessageId),
+                            new CqMessage("消息过长，请在私聊中查看（如果您没有收到私聊消息，请检查是否允许陌生人私聊或添加好友）")));
+                }
+                catch (Exception)
+                {
+                    hintMessage = "私聊消息发送失败，请检查是否允许陌生人私聊或添加好友";
+                    batchState = PhigrosModuleOperationState.ERR_INTERNAL;
+                }
+            }
+
+            if (batchState != PhigrosModuleOperationState.SUCCESS)
+                await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                    commandInfo.GroupId,
+                    new CqMessage(new CqReplyMsg(commandInfo.MessageId), new CqMessage(hintMessage)));
+        }
+        catch (Exception ex)
+        {
+            logger.Error("出现异常：", ex);
+        }
+
+        logger.Info($"batch 查询状态：{batchState}");
+    }
 }
