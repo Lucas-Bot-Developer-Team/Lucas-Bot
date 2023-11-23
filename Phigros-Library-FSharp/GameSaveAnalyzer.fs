@@ -41,6 +41,12 @@ type IEnumerable<'T> with
      member public this.Length() = 
         this |> Seq.sumBy (fun _ -> 1)
 
+// Util: Check bool, false -> throw PhigrosAPIException
+let CheckIfTrue (reason: string) (value: bool) =
+    match value with
+     | true -> ()
+     | false -> raise(PhigrosAPIException(reason))
+
 // Save analyzing functions.
 let GetFullComboCount (diff: Difficulty) (playRecords: PlayRecord seq) = 
     playRecords
@@ -56,7 +62,7 @@ let GetBestN n (playRecords: PlayRecord seq) =
     try    
         playRecords
         |> Seq.sortByDescending (fun pr -> pr.singleRKS)
-        |> Seq.take n
+        |> Seq.truncate n
     with
      | :? InvalidOperationException -> playRecords
      | :? ArgumentException -> raise(PhigrosAPIException("Saving is empty. Please play a song first!"))
@@ -221,7 +227,18 @@ let GetPlayRecordFromUserInput userInput playRecords =
      [ for str in userInput -> str ]
       |> _SliceUserInputDifficulty playRecords
 
-    
+// Batch query functions.
+let GetPlayRecordsBatch (prescribedMinimum: float32) (superiorLimit: float32) (playRecords: PlayRecord seq) =
+    (prescribedMinimum <= superiorLimit)
+     |> CheckIfTrue "定数范围非法。"
+    playRecords
+     |> Seq.filter (fun pr -> 
+                        match pr.songId |> QuerySongInfoFromId with
+                          | Some(songInfo) -> songInfo.Charts[pr.difficulty].Difficulty >= prescribedMinimum && songInfo.Charts[pr.difficulty].Difficulty <= superiorLimit
+                          | None -> raise(PhigrosAPIException($"Song not found. Please update API version. Internal ID: {pr.songId}")))
+     |> Seq.sortBy (fun pr -> match pr.songId |> QuerySongInfoFromId with
+                               | Some(songInfo) -> songInfo.Charts[pr.difficulty].Difficulty
+                               | None -> raise(PhigrosAPIException($"Song not found. Please update API version. Internal ID: {pr.songId}")))
 
 // Anti-Cheat functions.
 let _checkChallengeModeCheat

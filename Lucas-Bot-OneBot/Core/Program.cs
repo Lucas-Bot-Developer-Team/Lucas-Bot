@@ -109,6 +109,7 @@ internal class Program
         CommandDispatcher.RegisterCommandHandler("song", AssetsHelpers.SongInfoProcessor);
         // 查询存档信息
         CommandDispatcher.RegisterCommandHandler("info", PhigrosModuleHelper.InfoProcessor);
+        CommandDispatcher.RegisterCommandHandler("batch", PhigrosModuleHelper.BatchProcessor);
         // 控制是否打开游戏内头像
         CommandDispatcher.RegisterCommandHandler("avatar", AccountManager.AvatarSettingProcessor);
         CommandDispatcher.RegisterCommandHandler("long", IfYouAreADragon.DragonPictureProcessor);
