@@ -11,13 +11,16 @@ public class BotConfig
 
     public required bool IsInDebugMode { get; set; }
 
+    public required TimeSpan ScheduledRebootTime { get; set; }
+
     public static void GenerateBotConfigFileSample()
     {
         var botConfig = new BotConfig()
         {
             HttpSessionProvider = "http://127.0.0.1:5700",
             MongoDBAddress = "mongodb://127.0.0.1",
-            IsInDebugMode = true
+            IsInDebugMode = true,
+            ScheduledRebootTime = TimeSpan.FromMinutes(30)
         };
         var xmlSerializer = new XmlSerializer(botConfig.GetType());
         var writeStream = new FileStream("config-sample.xml", FileMode.OpenOrCreate, FileAccess.Write, FileShare.Write);
