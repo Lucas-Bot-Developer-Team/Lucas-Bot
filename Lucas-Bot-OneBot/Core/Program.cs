@@ -31,6 +31,7 @@ internal class Program
     {
         Logger.Info("Log4Net 已配置");
         var isInDebugMode = false;
+        var scheduledRebootTime = new TimeSpan();
 
         if (args.Contains("-g") || args.Contains("--generate-config-file"))
         {
@@ -47,6 +48,8 @@ internal class Program
                 var config = new XmlSerializer(typeof(BotConfig))
                                 .Deserialize(File.OpenRead("config.xml")) as BotConfig;
                 isInDebugMode = config!.IsInDebugMode;
+                scheduledRebootTime = config!.ScheduledRebootTime;
+                BotStatusHelper.ScheduledRebootTime = scheduledRebootTime;
                 HttpSession = new(new CqHttpSessionOptions()
                 {
                     BaseUri = new Uri(config!.HttpSessionProvider)
@@ -79,7 +82,7 @@ internal class Program
             CommandBuilder.RegisterCommandPrefix('！');
         }
 
-        Logger.Info($"正向HTTP请求地址：htt" + $"p://{HttpSession.BaseClient.BaseAddress}");
+        Logger.Info($"正向HTTP请求地址：{HttpSession.BaseClient.BaseAddress}");
         Logger.Info($"反向HTTP请求地址：htt" + $"p://{RHttpIpProvider.GetIpAddress()}:5900");
         StopWatch.Start();
         Logger.Info("计时器已启动");
@@ -128,7 +131,9 @@ internal class Program
         Logger.Info("已建立到 Shamrock 的正/反向HTTP连接，机器人已上线");
 
         // 阻塞主线程，启动消息处理
-        await Task.Delay(-1);
+        await Task.Delay(scheduledRebootTime);
+        Logger.Warn("超过config.xml中的自动重启时间，应用将退出，请根据操作系统给配置自动重启（如使用systemd、脚本等）");
+        Environment.Exit(0);
     }
 
     public static TimeSpan GetRunTime()
