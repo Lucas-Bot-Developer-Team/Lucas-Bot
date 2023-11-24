@@ -104,4 +104,37 @@ internal static class Utilities
     {
         return Process.GetCurrentProcess().WorkingSet64 * 1.0 / (1024 * 1024);
     }
+
+    /// <summary>
+    /// 获得字符串的Levenshtein Distance
+    /// </summary>
+    /// <param name="lhs">字符串1</param>
+    /// <param name="rhs">字符串2</param>
+    /// <returns>Levenshtein Distance</returns>
+    public static int GetLevenshteinDistance(string lhs, string rhs)
+    {
+        int m = lhs.Length;
+        int n = rhs.Length;
+        var L = new int[m + 1, n + 1];
+        for (var i = 0; i <= m; i++)
+        {
+            for (var j = 0; j <= n; j++)
+            {
+                if (i == 0 || j == 0)
+                {
+                    L[i, j] = 0;
+                }
+                else if (lhs[i - 1] == rhs[j - 1])
+                {
+                    L[i, j] = L[i - 1, j - 1] + 1;
+                }
+                else
+                {
+                    L[i, j] = Math.Max(L[i - 1, j], L[i, j - 1]);
+                }
+            }
+        }
+        int lcs = L[m, n];
+        return m - lcs + n - lcs;
+    }
 }

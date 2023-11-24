@@ -28,6 +28,7 @@ internal static class BotStatusHelper
                 $"{CommandBuilder.DefaultCommandSuffix}status 查询服务状态\n" +
                 $"{CommandBuilder.DefaultCommandSuffix}song <曲目ID/名称/别名> 查询曲目信息\n" +
                 $"{CommandBuilder.DefaultCommandSuffix}info 查看绑定的账号信息\n" +
+                $"{CommandBuilder.DefaultCommandSuffix}batch 定数下限 <定数上限> 批量查分\n" +
                 $"{CommandBuilder.DefaultCommandSuffix}long 龙图盲盒\n" +
                 "更多功能：正在开发中\n绑定请尽量私聊完成（无需加好友）！"));
     }

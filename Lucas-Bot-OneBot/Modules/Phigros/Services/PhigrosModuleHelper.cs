@@ -448,6 +448,7 @@ public static class PhigrosModuleHelper
         var hintMessage = "";
         var prescribedMinimum = 0f;
         var superiorLimit = prescribedMinimum;
+        var count = 0;
 
         if (commandInfo.Parameters.Count != 1 && commandInfo.Parameters.Count != 2) 
         {
@@ -488,7 +489,7 @@ public static class PhigrosModuleHelper
             {
                 var playRecords = await WrapFSharpAsync(phigrosUser.getPlayRecordList());
                 var batchRecords = GetPlayRecordsBatch(prescribedMinimum, superiorLimit, playRecords);
-                var count = batchRecords.Count();
+                count = batchRecords.Count();
                 var stringBuilder = new StringBuilder($"[批量查分结果]\n");
 
                 if (count != 0)
@@ -537,11 +538,20 @@ public static class PhigrosModuleHelper
             {
                 try
                 {
-                    await Program.HttpSession.SendPrivateMessageAsync(commandInfo.SenderId, new CqMessage(hintMessage));
-                    if (commandInfo.MessageType == CqMessageType.Group)
-                        await Program.HttpSession.SendGroupMessageAsync(commandInfo.GroupId!.Value, new CqMessage(
-                            new CqReplyMsg(commandInfo.MessageId),
-                            new CqMessage("消息过长，请在私聊中查看（如果您没有收到私聊消息，请检查是否允许陌生人私聊或添加好友）")));
+                    if (count > 15)
+                    {
+                        await Program.HttpSession.SendPrivateMessageAsync(commandInfo.SenderId, new CqMessage(hintMessage));
+                        if (commandInfo.MessageType == CqMessageType.Group)
+                            await Program.HttpSession.SendGroupMessageAsync(commandInfo.GroupId!.Value, new CqMessage(
+                                new CqReplyMsg(commandInfo.MessageId),
+                                new CqMessage("消息过长，请在私聊中查看（如果您没有收到私聊消息，请检查是否允许陌生人私聊或添加好友）")));
+                    }
+                    else
+                    {
+                        await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                            commandInfo.GroupId,
+                            new CqMessage(new CqReplyMsg(commandInfo.MessageId), new CqMessage(hintMessage)));
+                    }
                 }
                 catch (Exception)
                 {
