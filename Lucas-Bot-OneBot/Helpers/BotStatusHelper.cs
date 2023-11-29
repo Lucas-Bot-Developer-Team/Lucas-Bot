@@ -15,22 +15,8 @@ internal static class BotStatusHelper
     {
         await Program.HttpSession.SendMessageAsync(command.MessageType, command.SenderId, command.GroupId,
             new CqMessage(
-                "Suzanne-Phigros 试运行 ver 0.0.4" +
-                (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? " 调试模式\n" : "\n") +
-                $"指令：\n{CommandBuilder.DefaultCommandSuffix}help 查看帮助\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}b19 生成查分图\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}bind <sessionToken> 绑定sessionToken\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}avatar <on|off> 控制查分图使用游戏内/QQ头像\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}unbind 解除绑定\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}bests <Bests数量> 文字形式输出Best19（或更多）\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}suggest 推荐推分曲目\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}acc <曲目ID/名称/别名> <难度（可选）> 查询单曲成绩信息\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}status 查询服务状态\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}song <曲目ID/名称/别名> 查询曲目信息\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}info 查看绑定的账号信息\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}batch 定数下限 <定数上限> 批量查分\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}long 龙图盲盒\n" +
-                "更多功能：正在开发中\n绑定请尽量私聊完成（无需加好友）！"));
+                "Suzanne-Phigros 试运行 ver 0.0.4\n" +
+                "帮助已迁移: https://www.yuque.com/lucas1522/sxcczd"));
     }
 
     public static async void StatusProcessor(Command command)

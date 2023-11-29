@@ -129,12 +129,7 @@ let QuerySongInfoFromId songId =
 let _initAvatarDict() =
     match _avatarDict.Count with
      | x when x = 0 ->
-        let avatarInfoFile = File.OpenText("assets/phigros-ingame-statistics/avatar.csv")
-        let avatarInfoList = avatarInfoFile.ReadToEnd().Trim().Split("\n")
-        for avatar in avatarInfoList do
-            let avatarInfo = avatar.Split(",")
-            // printfn $"Key = {avatarInfo[1].Trim()} -> Value = assets/avatar/{avatarInfo[0].Trim()}.png"
-            _avatarDict.Add(avatarInfo[0].Trim(), $"assets/avatar/{avatarInfo[0].Trim()}.png")
+            _avatarDict.Add("Cipher : /2&//<|0", "assets/avatar/Cipher1.png")
      | _ -> ()
      
 let QueryScoreRankIcon isFC rank =
@@ -169,8 +164,14 @@ let QuerySongIdFromAlias alias =
     alias
      |> _GenericQueryFromDict _initAliasesDict _aliasesDict 
 
-let QueryAvatarPathFromName (avatarName: String) = 
-    Some($"assets/avatar/{avatarName.Trim()}.png")
+let QueryAvatarPathFromName (avatarName: String) =
+    _initAvatarDict()
+    printfn $"Query avatar name: {avatarName}"
+    match _avatarDict.ContainsKey(avatarName.Trim()) with
+     | true ->
+         Some(_avatarDict[avatarName.Trim()])
+     | false ->
+         Some($"""assets/avatar/{avatarName.Trim()}.png""")
      
 let ReverseQueryAliasFromSongId songId =
     _initAliasesDict()

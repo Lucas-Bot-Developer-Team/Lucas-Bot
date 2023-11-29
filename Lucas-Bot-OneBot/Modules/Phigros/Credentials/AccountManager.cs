@@ -66,7 +66,7 @@ public static class AccountManager
         var hintMessage = bindState switch
         {
             BindState.SUCCESS => "绑定成功。为避免隐私泄露，请您尽快撤回包含sessionToken的信息（若为私聊绑定请忽略）。",
-            BindState.ERR_INSTRUCTION_FORMAT => "指令格式无效，请重新输入。若您感到疑惑请查询帮助。",
+            BindState.ERR_INSTRUCTION_FORMAT => $"指令格式无效，请重新输入。若您感到疑惑请使用 {CommandBuilder.DefaultCommandSuffix}help 查询帮助。",
             BindState.ERR_ALREADY_BOUND => "您已经绑定账号，需要先解绑后才能绑定。",
             BindState.ERR_INVALID_SESSIONTOKEN => "sessionToken格式无效，请重新输入。若您感到疑惑请查询帮助。",
             _ => throw new ArgumentOutOfRangeException(nameof(commandInfo))
