@@ -31,6 +31,7 @@ internal class Program
     {
         Logger.Info("Log4Net 已配置");
         var isInDebugMode = false;
+        var mongoDBAddress = "";
         var scheduledRebootTime = new TimeSpan();
 
         if (args.Contains("-g") || args.Contains("--generate-config-file"))
@@ -49,6 +50,7 @@ internal class Program
                                 .Deserialize(File.OpenRead("config.xml")) as BotConfig;
                 isInDebugMode = config!.IsInDebugMode;
                 scheduledRebootTime = config!.ScheduledRebootTime;
+                mongoDBAddress = config!.MongoDBAddress;
                 BotStatusHelper.ScheduledRebootTime = scheduledRebootTime;
                 HttpSession = new(new CqHttpSessionOptions()
                 {
@@ -87,7 +89,7 @@ internal class Program
         StopWatch.Start();
         Logger.Info("计时器已启动");
 
-        Utilities.InitMongoDbConnection("mongodb://192.168.31.104:27017");
+        Utilities.InitMongoDbConnection(mongoDBAddress);
 
 
         // 账号绑定功能
