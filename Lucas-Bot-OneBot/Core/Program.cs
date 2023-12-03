@@ -115,7 +115,8 @@ internal class Program
         // 控制是否打开游戏内头像
         CommandDispatcher.RegisterCommandHandler("avatar", AccountManager.AvatarSettingProcessor);
         CommandDispatcher.RegisterCommandHandler("long", IfYouAreADragon.DragonPictureProcessor);
-
+        // 关于
+        CommandDispatcher.RegisterCommandHandler("about", BotStatusHelper.AboutProcessor);
         // 配置程序停止时动作
         Console.CancelKeyPress += (sender, eventArgs) =>
         {
@@ -131,6 +132,21 @@ internal class Program
 
         // 启动反向HTTP会话
         await RHttpSession.StartAsync();
+        try
+        {
+            var info = await HttpSession.GetLoginInformationAsync();
+            Logger.Info("当前登陆信息:");
+            Logger.Info($"Shamrock 状态: {info!.Status.ToString()}");
+            Logger.Info($"QQ号: {info.UserId}");
+            Logger.Info($"昵称: {info.Nickname}");
+            Logger.Info($"服务端返回的额外信息: {info.EchoData}");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("尝试连接 Shamrock 失败，进程将退出", ex);
+            Environment.Exit(1);
+        }
+
         Logger.Info("已建立到 Shamrock 的正/反向HTTP连接，机器人已上线");
 
         // 阻塞主线程，启动消息处理

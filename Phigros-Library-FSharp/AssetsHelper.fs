@@ -61,7 +61,7 @@ let _GenericQueryFromDict<'T>
     (dict: Dictionary<string, 'T>)
     (key: string) =
     try
-        initializer()
+        lock dict initializer
         match [for dictKey in dict.Keys -> dictKey]
               |> List.exists (fun k -> k.ToLower().Equals(key.ToLower())) with
          | true ->
