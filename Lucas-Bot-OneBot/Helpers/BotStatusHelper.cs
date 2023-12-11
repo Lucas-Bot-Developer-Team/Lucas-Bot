@@ -1,4 +1,5 @@
-﻿using EleCho.GoCqHttpSdk;
+﻿using System.Reflection;
+using EleCho.GoCqHttpSdk;
 using EleCho.GoCqHttpSdk.Message;
 using Lucas_Bot_OneBot.Core;
 using Lucas_Bot_OneBot.Entities;
@@ -8,6 +9,12 @@ namespace Lucas_Bot_OneBot.Helpers;
 
 internal static class BotStatusHelper
 {
+
+    public static string GetVersion()
+    {
+        var version = Assembly.GetEntryAssembly()!.GetName().Version!;
+        return $"{version.Major}.{version.Minor}.{version.Build}";
+    }
 
     private static List<string> _tips = new List<string>()
     {
@@ -24,7 +31,7 @@ internal static class BotStatusHelper
     {
         await Program.HttpSession.SendMessageAsync(command.MessageType, command.SenderId, command.GroupId,
             new CqMessage(
-                "Suzanne-Phigros 试运行 ver 0.0.4\n" +
+                $"Suzanne-Phigros 试运行 ver {GetVersion()}\n" +
                 "帮助已迁移: https://www.yuque.com/lucas1522/sxcczd"));
     }
 
@@ -42,7 +49,7 @@ internal static class BotStatusHelper
         int index = rd.Next(_tips.Count);
         await Program.HttpSession.SendMessageAsync(command.MessageType, command.SenderId, command.GroupId,
             new CqMessage(
-                "Suzanne-Phigros 试运行 ver 0.0.4\n" +
+                $"Suzanne-Phigros 试运行 ver {GetVersion()}\n" +
                 $"Powered by {RuntimeInformation.FrameworkDescription}\n" +
                 $"Tip: {_tips[index]}"));
     }
