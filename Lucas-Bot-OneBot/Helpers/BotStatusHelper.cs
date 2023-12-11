@@ -1,4 +1,5 @@
-﻿using EleCho.GoCqHttpSdk;
+﻿using System.Reflection;
+using EleCho.GoCqHttpSdk;
 using EleCho.GoCqHttpSdk.Message;
 using Lucas_Bot_OneBot.Core;
 using Lucas_Bot_OneBot.Entities;
@@ -9,28 +10,48 @@ namespace Lucas_Bot_OneBot.Helpers;
 internal static class BotStatusHelper
 {
 
+    public static string GetVersion()
+    {
+        var version = Assembly.GetEntryAssembly()!.GetName().Version!;
+        return $"{version.Major}.{version.Minor}.{version.Build}";
+    }
+
+    private static List<string> _tips = new List<string>()
+    {
+        "宇宙中密度最大的物质不是黑洞，是 node_modules 。", // <- H开头查分Bot
+        "Rust 只是把该让程序员做的事情推给了编译器，最后的结果是让程序员小脑萎缩 。", // <- M开头查分Bot
+        "当 Rust 成为“巨坑”：拖慢开发速度、员工被折磨数月信心全无，无奈还得硬着头皮继续", // <- M开头查分Bot
+        "\"b\" + \"a\" + +\"a\" + \"a\"; // -> baNaNa", // <- H开头查分Bot
+        "听说国内一堆软件开坑第一件事情就是加关于，刚想起有这回事，倒没什么动力加了，就这样了"
+    };
+
     public static TimeSpan ScheduledRebootTime { get; set; } = new TimeSpan();
 
     public static async void HelpProcessor(Command command)
     {
         await Program.HttpSession.SendMessageAsync(command.MessageType, command.SenderId, command.GroupId,
             new CqMessage(
-                "Suzanne-Phigros 试运行 ver 0.0.4" +
-                (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? " 调试模式\n" : "\n") +
-                $"指令：\n{CommandBuilder.DefaultCommandSuffix}help 查看帮助\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}b19 生成查分图\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}bind <sessionToken> 绑定sessionToken\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}avatar <on|off> 控制查分图使用游戏内/QQ头像\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}unbind 解除绑定\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}bests <Bests数量> 文字形式输出Best19（或更多）\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}suggest 推荐推分曲目\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}acc <曲目ID/名称/别名> <难度（可选）> 查询单曲成绩信息\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}status 查询服务状态\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}song <曲目ID/名称/别名> 查询曲目信息\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}info 查看绑定的账号信息\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}batch 定数下限 <定数上限> 批量查分\n" +
-                $"{CommandBuilder.DefaultCommandSuffix}long 龙图盲盒\n" +
-                "更多功能：正在开发中\n绑定请尽量私聊完成（无需加好友）！"));
+                $"Suzanne-Phigros 试运行 ver {GetVersion()}\n" +
+                "帮助已迁移: https://www.yuque.com/lucas1522/sxcczd"));
+    }
+
+    public static async void AboutProcessor(Command command)
+    {
+        lock (_tips)
+        {
+            if (_tips.Count == 5)
+            {
+                var gameTips = File.ReadAllLines("assets/phigros-ingame-statistics/tips.txt");
+                _tips.AddRange(gameTips);
+            }
+        }
+        var rd = new Random((int)DateTime.Now.Ticks);
+        int index = rd.Next(_tips.Count);
+        await Program.HttpSession.SendMessageAsync(command.MessageType, command.SenderId, command.GroupId,
+            new CqMessage(
+                $"Suzanne-Phigros 试运行 ver {GetVersion()}\n" +
+                $"Powered by {RuntimeInformation.FrameworkDescription}\n" +
+                $"Tip: {_tips[index]}"));
     }
 
     public static async void StatusProcessor(Command command)

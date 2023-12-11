@@ -42,6 +42,15 @@ let gameRecordVersion = 1
 let gameProgressVersion = 3
 let userInfoVersion = 1
 
+let _ConstructIntFromLEB128 (data: byte array) = 
+    let firstByte = (int data[0]) &&& 255
+    match 7 |> GetBit firstByte with
+     | false -> data[1..], int (firstByte &&& 127)
+     | true ->
+              let secondByte = (int data[1]) &&& 127
+              let value = (secondByte <<< 7) ||| (firstByte &&& 127)
+              data[2..], value
+
 let _checkPlayRecordInternal (playRecord: PlayRecord) =
     match playRecord.scoreRank with
      | Phi ->
@@ -52,9 +61,12 @@ let _checkPlayRecordInternal (playRecord: PlayRecord) =
 
 let _ConstructStringInternal (data: byte array) =
     let length = int data[0]
-    if data[0] >= (byte 128)
-     then (data[2..length + 1] |> Encoding.UTF8.GetString, length + 1)
-     else (data[1..length] |> Encoding.UTF8.GetString, length)
+    let rest, length = data |> _ConstructIntFromLEB128
+    // printfn $"str = {rest[..length] |> Encoding.UTF8.GetString}"
+    rest[..length - 1] |> Encoding.UTF8.GetString, length
+    // if data[0] >= (byte 128)
+    //  then (data[2..length + 1] |> Encoding.UTF8.GetString, length + 1)
+    //  else (data[1..length] |> Encoding.UTF8.GetString, length)
     
 let rec _ConstructShortArrayFromLEB128Internal (result: int16 array) count consumption (data: byte array) =
     match count with

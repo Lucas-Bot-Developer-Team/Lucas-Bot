@@ -196,6 +196,21 @@ let GenerateB19ImageAsync
         paint.FilterQuality <- SKFilterQuality.High
 
         // 绘制背景
+        let b1Pr = filteredB19WithOverflow |> Seq.head
+        let songInfo = b1Pr.songId |> QuerySongInfoFromId
+        use userBackGroundStream = File.OpenRead(songInfo.Value.Illustration)
+        use userBackGroundBitmap = SKBitmap.Decode(userBackGroundStream).Resize(SKImageInfo(2730, 1440), SKFilterQuality.High)
+
+        // 背景高斯模糊+加灰处理
+        // paint.ImageFilter <- SKImageFilter.CreateBlur(10f, 10f)
+        // canvas.DrawBitmap(userBackGroundBitmap, SKPoint(-341f, 0f), paint)
+        // canvas.DrawBitmap(userBackGroundBitmap, SKPoint(0f, 0f), paint)
+        // paint.ImageFilter <- null
+        // paint.Color <- SKColors.Gray.WithAlpha(byte 127)
+        // canvas.DrawRect(SKRect(0f, 0f, 2048f, 1440f), paint)
+
+        // paint.Color <- SKColors.White
+
         use backGroundStream = File.OpenRead("assets/phigros-b19-assets/Background.png")
         use backGroundBitmap = SKBitmap.Decode(backGroundStream) // .Resize(SKImageInfo(2730, 1440), SKFilterQuality.High)
 

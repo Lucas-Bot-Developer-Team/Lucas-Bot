@@ -73,7 +73,7 @@ public static class CommandDispatcher
             {
                 logger.Info($"{commandInfo.CommandTrigger} -> {kvPair.Key}: distance = {distance}");
                 hasPossibleEntry = true;
-                hintMessage += $"{CommandBuilder.DefaultCommandSuffix}{kvPair.Key} (相似度: {filter - distance})\n";
+                hintMessage += $"{CommandBuilder.DefaultCommandSuffix}{kvPair.Key} (相似度: {(filter - distance) / 2.0:F1})\n";
             }
         }
         hintMessage = hintMessage.Remove(hintMessage.Length - 1);
