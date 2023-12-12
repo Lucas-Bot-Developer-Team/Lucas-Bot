@@ -26,7 +26,7 @@
 //
 //
 
-module GameSave
+module Phigros_Library_FSharp.GameSave
 open System
 open ScoreUtils
 open AssetsHelper

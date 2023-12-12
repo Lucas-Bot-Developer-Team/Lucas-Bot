@@ -26,7 +26,7 @@
 //
 //
 
-module GameSaveAnalyzer
+module Phigros_Library_FSharp.GameSaveAnalyzer
 open System
 
 open System.Text.RegularExpressions

@@ -3,6 +3,7 @@ using EleCho.GoCqHttpSdk.Message;
 using Lucas_Bot_OneBot.Core;
 using Lucas_Bot_OneBot.Entities;
 using SkiaSharp;
+using static Phigros_Library_FSharp.PhigrosAPIException;
 
 namespace Lucas_Bot_OneBot.Modules.Phigros.Services;
 
@@ -27,8 +28,8 @@ internal static class AssetsHelpers
 
         try
         {
-            var result = AssetsHelper.QuerySongInfoFromInput(string.Join(' ', commandInfo.Parameters));
-            var aliases = AssetsHelper.ReverseQueryAliasFromSongId(result.SongId);
+            var result = Phigros_Library_FSharp.AssetsHelper.QuerySongInfoFromInput(string.Join(' ', commandInfo.Parameters));
+            var aliases = Phigros_Library_FSharp.AssetsHelper.ReverseQueryAliasFromSongId(result.SongId);
             var aliasString = "[ " + string.Join("; ", aliases) + " ]";
 
             var image = SKBitmap.Decode(result.Illustration);
@@ -56,7 +57,7 @@ internal static class AssetsHelpers
             await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
                    commandInfo.GroupId, new CqMessage(CqImageMsg.FromBytes(stream.ToArray())));
         }
-        catch (PhigrosAPIException.PhigrosAPIException e)
+        catch (PhigrosAPIException e)
         {
             logger.Error("FSharp层出现异常", e);
             hintMessage = $"[PhigrosAPIException]\n{e.Data0}";

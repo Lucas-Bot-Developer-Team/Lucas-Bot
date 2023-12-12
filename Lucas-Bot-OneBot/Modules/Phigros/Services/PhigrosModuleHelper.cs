@@ -5,9 +5,12 @@ using EleCho.GoCqHttpSdk.Message;
 using System.Text;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using static PhigrosBestImageGenerator;
-using static PhigrosAPIHandler;
-using static GameSaveAnalyzer;
+
+using static Phigros_Library_FSharp.PhigrosAPIException;
+using static Phigros_Library_FSharp.PhigrosBestImageGenerator;
+using static Phigros_Library_FSharp.PhigrosAPIHandler;
+using static Phigros_Library_FSharp.GameSaveAnalyzer;
+
 using Lucas_Bot_OneBot.Entities;
 using Lucas_Bot_OneBot.Core;
 using Lucas_Bot_OneBot.Helpers;
@@ -62,7 +65,7 @@ public static class PhigrosModuleHelper
                     {
                         var userInfo = await WrapFSharpAsync(phigrosUser.getUserInfoAsync());
                         logger.Info($"avatar = {userInfo.avatar}");
-                        avatarUri = AssetsHelper.QueryAvatarPathFromName(userInfo.avatar).Value;
+                        avatarUri = Phigros_Library_FSharp.AssetsHelper.QueryAvatarPathFromName(userInfo.avatar).Value;
                     }
                 }
                 var best19ImageData =
@@ -84,7 +87,7 @@ public static class PhigrosModuleHelper
                         break;
                 }
             }
-            catch (PhigrosAPIException.PhigrosAPIException e)
+            catch (PhigrosAPIException e)
             {
                 logger.Error("FSharp层出现异常", e);
                 queryFailedReason = $"[PhigrosAPIException]\n{e.Data0}";
@@ -175,7 +178,7 @@ public static class PhigrosModuleHelper
                     hintMessage = stringBuilder.ToString();
                     logger.Info("玩家信息查询成功，已从FSharp层退出");
                 }
-                catch (PhigrosAPIException.PhigrosAPIException e)
+                catch (PhigrosAPIException e)
                 {
                     logger.Error("FSharp层出现异常", e);
                     hintMessage = $"[PhigrosAPIException]\n{e.Data0}";
@@ -273,7 +276,7 @@ public static class PhigrosModuleHelper
                 hintMessage = stringBuilder.ToString();
                 logger.Info("玩家信息查询成功，已从FSharp层退出");
             }
-            catch (PhigrosAPIException.PhigrosAPIException e)
+            catch (PhigrosAPIException e)
             {
                 logger.Error("FSharp层出现异常", e);
                 hintMessage = $"[PhigrosAPIException]\n{e.Data0}";
@@ -334,7 +337,7 @@ public static class PhigrosModuleHelper
                 var playRecords = await WrapFSharpAsync(phigrosUser.getPlayRecordList());
                 var rks = GetRKS(playRecords);
                 var gameProgress = await WrapFSharpAsync(phigrosUser.getGameProgressAsync());
-                var chalMode = ScoreUtils.GetChallengeModeInfo(gameProgress.challengeModeRank);
+                var chalMode = Phigros_Library_FSharp.ScoreUtils.GetChallengeModeInfo(gameProgress.challengeModeRank);
                 var updateTime = await WrapFSharpAsync(phigrosUser.getSaveUpdateTimeAsync());
                 hintMessage = $"昵称: {username}\n" +
                     $"RKS: {rks:F3}\n" +
@@ -342,7 +345,7 @@ public static class PhigrosModuleHelper
                     $"存档更新时间: {updateTime:yyyy-MM-dd HH:mm:ss}";
                 logger.Info("玩家信息查询成功，已从FSharp层退出");
             }
-            catch (PhigrosAPIException.PhigrosAPIException e)
+            catch (PhigrosAPIException e)
             {
                 logger.Error("FSharp层出现异常", e);
                 hintMessage = $"[PhigrosAPIException]\n{e.Data0}";
@@ -404,7 +407,7 @@ public static class PhigrosModuleHelper
                 hintMessage = FormatPlayRecord(playRecord, playRecords);
                 logger.Info("玩家信息查询成功，已从FSharp层退出");
             }
-            catch (PhigrosAPIException.PhigrosAPIException e)
+            catch (PhigrosAPIException e)
             {
                 logger.Error("FSharp层出现异常", e);
                 hintMessage = $"[PhigrosAPIException]\n{e.Data0}";
@@ -509,7 +512,7 @@ public static class PhigrosModuleHelper
                 hintMessage = stringBuilder.ToString();
                 logger.Info("玩家信息查询成功，已从FSharp层退出");
             }
-            catch (PhigrosAPIException.PhigrosAPIException e)
+            catch (PhigrosAPIException e)
             {
                 logger.Error("FSharp层出现异常", e);
                 hintMessage = $"[PhigrosAPIException]\n{e.Data0}";

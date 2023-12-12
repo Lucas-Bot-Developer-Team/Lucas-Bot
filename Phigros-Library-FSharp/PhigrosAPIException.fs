@@ -26,6 +26,6 @@
 //
 //
 
-module PhigrosAPIException
+module Phigros_Library_FSharp.PhigrosAPIException
 
 exception PhigrosAPIException of string
