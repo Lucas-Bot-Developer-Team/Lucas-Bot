@@ -26,7 +26,7 @@
 //
 //
 
-module ScoreUtils
+module Phigros_Library_FSharp.ScoreUtils
 open System
 
 ///

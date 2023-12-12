@@ -26,7 +26,7 @@
 //
 //
 
-module PhigrosBestImageGenerator
+module Phigros_Library_FSharp.PhigrosBestImageGenerator
 open System
 open SkiaSharp
 open System.IO

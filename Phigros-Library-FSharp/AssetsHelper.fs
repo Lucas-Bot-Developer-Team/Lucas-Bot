@@ -26,7 +26,7 @@
 //
 //
 
-module AssetsHelper
+module Phigros_Library_FSharp.AssetsHelper
 open System.Collections.Generic
 open System.IO
 open System

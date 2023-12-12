@@ -26,7 +26,7 @@
 //
 //
 
-module PhigrosAPIHandler
+module Phigros_Library_FSharp.PhigrosAPIHandler
 open System
 open Flurl.Http
 open Newtonsoft.Json
