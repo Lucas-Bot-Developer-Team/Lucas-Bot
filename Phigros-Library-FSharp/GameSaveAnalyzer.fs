@@ -92,7 +92,6 @@ let _probeMinRKSInternal rks =
             
 let ProbeMinAcc (songId: string) (diff: Difficulty)
                 (playRecordList: PlayRecord seq) =
-    // No English annotation, just slack off a bit here.
     // 先查询歌曲信息
     let songInformation = songId
                           |> QuerySongInfoFromId

@@ -6,7 +6,7 @@
         <RootNamespace>Lucas_Bot_OneBot</RootNamespace>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <Version>0.0.5</Version>
+        <Version>0.1.0</Version>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -14,14 +14,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="EleCho.GoCqHttpSdk" Version="1.2.4" />
-      <PackageReference Include="EleCho.GoCqHttpSdk.CommandExecuting" Version="1.0.7" />
-      <PackageReference Include="EleCho.GoCqHttpSdk.MessageMatching" Version="1.0.6" />
       <PackageReference Include="log4net" Version="2.0.15" />
       <PackageReference Include="MongoDB.Driver" Version="2.22.0" />
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\EleCho.GoCqHttpSdk\EleCho.GoCqHttpSdk.Fork.csproj" />
       <ProjectReference Include="..\Phigros-Library-FSharp\Phigros-Library-FSharp.fsproj" />
     </ItemGroup>
 

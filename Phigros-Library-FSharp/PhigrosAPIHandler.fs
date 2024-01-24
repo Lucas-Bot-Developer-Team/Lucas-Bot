@@ -83,6 +83,18 @@ type PhigrosUser(sessionToken: string) =
                     return ""
        }
     
+    member this.getTapTapAvatarAsync() =
+        async {
+            try
+                let! rawResult = "avatar"
+                                 |> _getInfoInternalAsync apiBaseUrl sessionToken "users/me"
+                let username = rawResult.ToString()
+                return username
+            with
+             | e -> raise(PhigrosAPIException(e.GetType().ToString() + ": " + e.Message))
+                    return ""
+       }
+    
     member this.getGameSaveUrlAsync() =
        async {
             try

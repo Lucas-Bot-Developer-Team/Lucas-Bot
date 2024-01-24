@@ -196,10 +196,10 @@ let GenerateB19ImageAsync
         paint.FilterQuality <- SKFilterQuality.High
 
         // 绘制背景
-        let b1Pr = filteredB19WithOverflow |> Seq.head
-        let songInfo = b1Pr.songId |> QuerySongInfoFromId
-        use userBackGroundStream = File.OpenRead(songInfo.Value.Illustration)
-        use userBackGroundBitmap = SKBitmap.Decode(userBackGroundStream).Resize(SKImageInfo(2730, 1440), SKFilterQuality.High)
+        // let b1Pr = filteredB19WithOverflow |> Seq.head
+        // let songInfo = b1Pr.songId |> QuerySongInfoFromId
+        // use userBackGroundStream = File.OpenRead(songInfo.Value.Illustration)
+        // use userBackGroundBitmap = SKBitmap.Decode(userBackGroundStream).Resize(SKImageInfo(2730, 1440), SKFilterQuality.High)
 
         // 背景高斯模糊+加灰处理
         // paint.ImageFilter <- SKImageFilter.CreateBlur(10f, 10f)
@@ -262,7 +262,7 @@ let GenerateB19ImageAsync
         // Data数量
         let dataSize, dataAmount = gameProgress.money |> GetDataAmount
         paint.TextSize <- 25f
-        canvas.DrawText("DATA", SKPoint(1698f, 188f), paint)
+        canvas.DrawText("DATA", SKPoint(1698f, 186f), paint)
         paint.TextAlign <- SKTextAlign.Right
         canvas.DrawText(String.Format("{0:F2} {1}", dataSize, dataAmount.ToString()), SKPoint(1924f, 186f), paint)
         paint.TextAlign <- SKTextAlign.Left

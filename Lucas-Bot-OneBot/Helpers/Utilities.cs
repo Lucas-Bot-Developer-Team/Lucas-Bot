@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using EleCho.GoCqHttpSdk;
 using log4net;
 using Lucas_Bot_OneBot.Core;
 using MongoDB.Bson;
@@ -77,8 +78,11 @@ internal static class Utilities
         return new TimeSpan(time.Days, time.Hours, time.Minutes, time.Seconds);
     }
 
-    public static string GetAvatarUri(long qq)
+    public static async Task<string> GetAvatarUri(long qq, long groupId = 0)
     {
+        // var result = await Program.HttpSession.Get
+        // Logger.Info(result!.ToString());
+        // return "";
         return $"https://q1.qlogo.cn/g?b=qq&nk={qq}&s=5";
     }
 
@@ -136,5 +140,22 @@ internal static class Utilities
         }
         int lcs = L[m, n];
         return m - lcs + n - lcs;
+    }
+
+    public static string[] GetLogo()
+    {
+        return """
+               ----------------------------------------------------------------------
+                 ______                                                              
+                /      \                                                             
+               /$$$$$$  | __    __  ________   ______   _______   _______    ______  
+               $$ \__$$/ /  |  /  |/        | /      \ /       \ /       \  /      \ 
+               $$      \ $$ |  $$ |$$$$$$$$/  $$$$$$  |$$$$$$$  |$$$$$$$  |/$$$$$$  |
+                $$$$$$  |$$ |  $$ |  /  $$/   /    $$ |$$ |  $$ |$$ |  $$ |$$    $$ |
+               /  \__$$ |$$ \__$$ | /$$$$/__ /$$$$$$$ |$$ |  $$ |$$ |  $$ |$$$$$$$$/ 
+               $$    $$/ $$    $$/ /$$      |$$    $$ |$$ |  $$ |$$ |  $$ |$$       |
+                $$$$$$/   $$$$$$/  $$$$$$$$/  $$$$$$$/ $$/   $$/ $$/   $$/  $$$$$$$/ 
+               ----------------------------------------------------------------------                                                         
+               """.Split('\n');
     }
 }

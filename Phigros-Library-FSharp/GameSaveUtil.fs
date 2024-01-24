@@ -45,11 +45,11 @@ let userInfoVersion = 1
 let _ConstructIntFromLEB128 (data: byte array) = 
     let firstByte = (int data[0]) &&& 255
     match 7 |> GetBit firstByte with
-     | false -> data[1..], int (firstByte &&& 127)
+     | false -> data[1..], int (firstByte &&& 127), 1
      | true ->
               let secondByte = (int data[1]) &&& 127
               let value = (secondByte <<< 7) ||| (firstByte &&& 127)
-              data[2..], value
+              data[2..], value, 2
 
 let _checkPlayRecordInternal (playRecord: PlayRecord) =
     match playRecord.scoreRank with
@@ -60,10 +60,10 @@ let _checkPlayRecordInternal (playRecord: PlayRecord) =
      | _ -> ()
 
 let _ConstructStringInternal (data: byte array) =
-    let length = int data[0]
-    let rest, length = data |> _ConstructIntFromLEB128
-    // printfn $"str = {rest[..length] |> Encoding.UTF8.GetString}"
-    rest[..length - 1] |> Encoding.UTF8.GetString, length
+    // let length = int data[0]
+    let rest, length, firstByteLength = data |> _ConstructIntFromLEB128
+    // printfn $"Constructed str = {rest[..length] |> Encoding.UTF8.GetString}; length = {length}"
+    rest[..length - 1] |> Encoding.UTF8.GetString, length, firstByteLength
     // if data[0] >= (byte 128)
     //  then (data[2..length + 1] |> Encoding.UTF8.GetString, length + 1)
     //  else (data[1..length] |> Encoding.UTF8.GetString, length)
@@ -178,7 +178,7 @@ let rec _ConstructSongRecordInternal
         |> _ConstructSongRecordInternal data[8..] fcList rest
 
 let ConstructSongRecord (data: byte array) = 
-    let songId, idLength = data |> _ConstructStringInternal
+    let songId, idLength, _ = data |> _ConstructStringInternal
     let songInfoRawLength = int data[idLength + 1]
     let clearInfo = int data[idLength + 2] |> GetDifficultyInfo
     let fcInfo = int data[idLength + 3] |> GetDifficultyInfo
@@ -241,7 +241,7 @@ let ConstructGameProgress ver (data: byte array) =
     gameProgress.isLegacyChapterFinished <- 1 |> GetBit firstByte
     gameProgress.alreadyShowCollectionTip <- 2 |> GetBit firstByte
     gameProgress.alreadyShowAutoUnlockINTip <- 3 |> GetBit firstByte
-    let completed, completedLength = data[1..] |> _ConstructStringInternal
+    let completed, completedLength, _ = data[1..] |> _ConstructStringInternal
     gameProgress.completed <- completed
     gameProgress.songUpdateInfo <- data[2 + completedLength]
     gameProgress.challengeModeRank <- data[3 + completedLength .. 4 + completedLength] |> BitConverter.ToInt16
@@ -272,11 +272,11 @@ let DeserializeGameProgress (path: string) =
 let ConstructUserInfo ver (data: byte array) =
     let userInfo = UserInfo(ver)
     userInfo.displayUserId <- Int32.IsPositive(int data[0])
-    let introduction, introLength = data[1..] |> _ConstructStringInternal
+    let introduction, introLength, introByteLength = data[1..] |> _ConstructStringInternal
     userInfo.selfIntroduction <- introduction
-    let avatar, avatarLength = data[2 + introLength..] |> _ConstructStringInternal
+    let avatar, avatarLength, _ = data[1 + introByteLength + introLength..] |> _ConstructStringInternal
     userInfo.avatar <- avatar
-    let background, backgroundLength = data[3 + introLength + avatarLength..] |> _ConstructStringInternal
+    let background, backgroundLength, _ = data[2 + introByteLength + introLength + avatarLength..] |> _ConstructStringInternal
     userInfo.background <- background
     userInfo
 
