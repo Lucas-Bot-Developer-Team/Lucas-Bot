@@ -36,9 +36,9 @@ internal static class AssetsHelpers
             var stream = new MemoryStream();
             image.Encode(stream, SKEncodedImageFormat.Png, 50);
 
-            var replyMessage = new CqMessage(new CqReplyMsg(commandInfo.MessageId))
+            var replyMessage = new CqMessage(new CqAtMsg(commandInfo.SenderId))
         {
-            $"歌曲名称: {result.SongName}\n",
+            $"\n歌曲名称: {result.SongName}\n",
             $"歌曲ID: {result.SongId}\n",
             $"曲师: {result.Composer}\n",
             $"曲绘画师: {result.Illustrator}\n",
@@ -73,7 +73,7 @@ internal static class AssetsHelpers
         hintMessage = suggestsState switch
         {
             AssetsQueryState.SUCCESS => hintMessage,
-            AssetsQueryState.ERR_NOT_BOUND => $"您未绑定。请先使用{CommandBuilder.DefaultCommandSuffix}bind指令完成绑定。",
+            AssetsQueryState.ERR_NOT_BOUND => throw new ArgumentOutOfRangeException(nameof(commandInfo)),
             AssetsQueryState.ERR_INTERNAL => hintMessage,
             AssetsQueryState.ERR_INSTRUCTION_FORMAT => throw new ArgumentOutOfRangeException(nameof(commandInfo)),
             _ => throw new ArgumentOutOfRangeException(nameof(commandInfo))

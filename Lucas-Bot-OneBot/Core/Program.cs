@@ -1,60 +1,62 @@
 ﻿// See https://aka.ms/new-console-template for more information
+
+using Lucas_Bot_OneBot.Modules.Amusement.YiYan;
+
 namespace Lucas_Bot_OneBot.Core;
 using EleCho.GoCqHttpSdk;
 using log4net;
-using Lucas_Bot_OneBot.Helpers;
-using Lucas_Bot_OneBot.Modules.Amusement;
-using Lucas_Bot_OneBot.Modules.Phigros.Credentials;
+using Helpers;
+using Modules.Amusement;
+using Modules.Phigros.Credentials;
 using System.Diagnostics;
-using Lucas_Bot_OneBot.Entities;
-using Lucas_Bot_OneBot.Modules.Phigros.Services;
+using Entities;
+using Modules.Phigros.Services;
 using System.Xml.Serialization;
 
-internal class Program
+internal static class Program
 {
 
     // 配置全局Logger
     public static ILog Logger { get; } = LogManager.GetLogger("Lucas-Bot-OneBot");
 
     // 初始化反向HTTP连接
-    public static CqRHttpSession RHttpSession { get; private set; } = new(new CqRHttpSessionOptions()
+    private static ICqPostSession RHttpSession { get; set; } = new CqRHttpSession(new CqRHttpSessionOptions()
     {
         BaseUri = new Uri("http" + $"://{RHttpIpProvider.GetIpAddress()}:5900")
     });
 
     // 初始化正向HTTP连接
-    public static CqHttpSession HttpSession { get; private set; } = new(new CqHttpSessionOptions());
+    public static ICqActionSession HttpSession { get; private set; } = new CqHttpSession(new CqHttpSessionOptions());
 
     private static Stopwatch StopWatch { get; } = new Stopwatch();
 
-    public static async Task Main(string[] args)
+    private static BotConfig? _botConfig;
+
+    private static void InitializeConfig()
     {
-        Logger.Info("Log4Net 已配置");
-        var isInDebugMode = false;
-        var mongoDBAddress = "";
-        var scheduledRebootTime = new TimeSpan();
-
-        if (args.Contains("-g") || args.Contains("--generate-config-file"))
+        // 显示 Logo
+        var logo = Utilities.GetLogo();
+        foreach (var row in logo)
         {
-            BotConfig.GenerateBotConfigFileSample();
-            Logger.Info("默认配置文件已生成，请根据实际使用修改");
-            return;
+            Logger.Info(row);
         }
-
-        // 从config.xml 读取配置信息
+        
+        // 从 config.xml 读取配置信息
         if (File.Exists("config.xml"))
         {
             try
             {
                 var config = new XmlSerializer(typeof(BotConfig))
-                                .Deserialize(File.OpenRead("config.xml")) as BotConfig;
-                isInDebugMode = config!.IsInDebugMode;
-                scheduledRebootTime = config!.ScheduledRebootTime;
-                mongoDBAddress = config!.MongoDBAddress;
-                BotStatusHelper.ScheduledRebootTime = scheduledRebootTime;
-                HttpSession = new(new CqHttpSessionOptions()
+                    .Deserialize(File.OpenRead("config.xml")) as BotConfig;
+                _botConfig = config;
+                if (_botConfig is null)
                 {
-                    BaseUri = new Uri(config!.HttpSessionProvider)
+                    throw new ArgumentNullException();
+                }
+                BotStatusHelper.ScheduledRebootTime = _botConfig.ScheduledRebootTime;
+                HttpSession = new CqHttpSession(new CqHttpSessionOptions()
+                {
+                    BaseUri = new Uri(_botConfig.HttpSessionProvider)
                 });
             }
             catch (Exception ex)
@@ -70,8 +72,104 @@ internal class Program
             Logger.Warn("并修改后命名为 config.xml, 放置在可执行文件根目录下");
             Environment.Exit(1);
         }
+    }
 
-        if (isInDebugMode)
+    private static async void InitializeConnection(ConnectionType type)
+    {
+        switch (type)
+        {
+            case ConnectionType.HTTP:
+                Logger.Info($"正向HTTP请求地址：{_botConfig!.HttpSessionProvider}");
+                Logger.Info($"反向HTTP请求地址：http://{RHttpIpProvider.GetIpAddress()}:5900");
+                break;
+            case ConnectionType.WEB_SOCKET:
+                var wsSession = new CqWsSession(new CqWsSessionOptions()
+                {
+                    BaseUri = new Uri(_botConfig!.HttpSessionProvider),
+                
+                });
+                HttpSession = wsSession;
+                RHttpSession = wsSession;
+            
+                Logger.Info($"WebSocket 监听地址：{_botConfig.HttpSessionProvider}");
+                break;
+            case ConnectionType.REVERSE_WEB_SOCKET:
+                var rWsSession = new CqRWsSession(new CqRWsSessionOptions()
+                {
+                    BaseUri = new Uri($"http://{RHttpIpProvider.GetIpAddress()}:5900"),
+                    
+                });
+                HttpSession = rWsSession;
+                RHttpSession = rWsSession;
+            
+                Logger.Info($"反向 WebSocket 监听地址：{rWsSession.BaseUri}");
+                break;
+        }
+            
+        // 注册消息处理中间件
+        RHttpSession.UseGroupMessage(CommandDispatcher.GroupCommandDispatchMiddleware);
+        RHttpSession.UsePrivateMessage(CommandDispatcher.PrivateCommandDispatchMiddleware);
+        // RHttpSession.UseGroupEssenceChanged();
+
+        // 启动反向HTTP会话
+        await StartSessionAsync(RHttpSession);
+        
+        try
+        {
+            var info = await HttpSession.GetLoginInformationAsync();
+            Logger.Info("当前登陆信息:");
+            Logger.Info($"Gensokyo 状态: {info!.Status.ToString()}");
+            Logger.Info($"Discord AppID: {info.UserId}");
+            Logger.Info($"昵称: {info.Nickname}");
+            Logger.Info($"服务端返回的额外信息: {info.EchoData}");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("尝试连接 Gensokyo 失败，进程将退出", ex);
+            Environment.Exit(1);
+        }
+
+        Logger.Info("已建立到 Gensokyo 的连接，机器人已上线");
+        return;
+
+        async Task StartSessionAsync(ICqPostSession session)
+        {
+            switch (_botConfig!.ConnectionType)
+            {
+                case ConnectionType.HTTP:
+                    await ((CqRHttpSession)session).StartAsync();
+                    break;
+                case ConnectionType.WEB_SOCKET:
+                    var wsSession = session as CqWsSession;
+                    wsSession!.UseHeartbeat(WebSocketHeartbeat.WebSocketHeartbeatMiddleware);
+                    await wsSession!.StartAsync();
+                    break;
+                case ConnectionType.REVERSE_WEB_SOCKET:
+                    var rWsSession = session as CqRWsSession;
+                    rWsSession!.UseHeartbeat(WebSocketHeartbeat.WebSocketHeartbeatMiddleware);
+                    await rWsSession!.StartAsync();
+                    Logger.Info("反向 WebSocket 连接已启动，将会等待 10 秒客户端启动时间");
+                    await Task.Delay(10000);
+                    break;
+            }
+                
+        }
+    }
+    
+    public static async Task Main(string[] args)
+    {
+        Logger.Info("Log4Net 已配置");
+
+        if (args.Contains("-g") || args.Contains("--generate-config-file"))
+        {
+            BotConfig.GenerateBotConfigFileSample();
+            Logger.Info("默认配置文件已生成，请根据实际使用修改");
+            return;
+        }
+
+        InitializeConfig();
+
+        if (_botConfig!.IsInDebugMode)
         {
             Logger.Warn("处于调试环境中，正在应用调试配置");
             Logger.Warn("调试时请关闭 Windows 防火墙");
@@ -83,13 +181,10 @@ internal class Program
             CommandBuilder.RegisterCommandPrefix('!');
             CommandBuilder.RegisterCommandPrefix('！');
         }
-
-        Logger.Info($"正向HTTP请求地址：{HttpSession.BaseClient.BaseAddress}");
-        Logger.Info($"反向HTTP请求地址：htt" + $"p://{RHttpIpProvider.GetIpAddress()}:5900");
         StopWatch.Start();
         Logger.Info("计时器已启动");
 
-        Utilities.InitMongoDbConnection(mongoDBAddress);
+        Utilities.InitMongoDbConnection(_botConfig.MongoDBAddress);
 
 
         // 账号绑定功能
@@ -117,42 +212,49 @@ internal class Program
         CommandDispatcher.RegisterCommandHandler("long", IfYouAreADragon.DragonPictureProcessor);
         // 关于
         CommandDispatcher.RegisterCommandHandler("about", BotStatusHelper.AboutProcessor);
+
+        // Test
+        if (!_botConfig.DeployedInDiscord)
+            CommandDispatcher.RegisterCommandHandler("yiyan", YiYanProvider.YiYanProcessorTest, CommandHandlerType.GROUP_ONLY);
+        
         // 配置程序停止时动作
-        Console.CancelKeyPress += (sender, eventArgs) =>
+        Console.CancelKeyPress += (_, _) =>
         {
-            RHttpSession.Stop();
-            Logger.Info("已断开和 Shamrock 的连接，机器人已下线");
+            StopSession(RHttpSession);
+            Logger.Info("已断开和 Gensokyo 的连接，机器人已下线");
             StopWatch.Stop();
             Environment.Exit(0);
         };
 
-        // 注册消息处理中间件
-        RHttpSession.UseGroupMessage(CommandDispatcher.GroupCommandDispatchMiddleware);
-        RHttpSession.UsePrivateMessage(CommandDispatcher.PrivateCommandDispatchMiddleware);
-
-        // 启动反向HTTP会话
-        await RHttpSession.StartAsync();
-        try
-        {
-            var info = await HttpSession.GetLoginInformationAsync();
-            Logger.Info("当前登陆信息:");
-            Logger.Info($"Shamrock 状态: {info!.Status.ToString()}");
-            Logger.Info($"QQ号: {info.UserId}");
-            Logger.Info($"昵称: {info.Nickname}");
-            Logger.Info($"服务端返回的额外信息: {info.EchoData}");
-        }
-        catch (Exception ex)
-        {
-            Logger.Error("尝试连接 Shamrock 失败，进程将退出", ex);
-            Environment.Exit(1);
-        }
-
-        Logger.Info("已建立到 Shamrock 的正/反向HTTP连接，机器人已上线");
+        InitializeConnection(_botConfig.ConnectionType);
 
         // 阻塞主线程，启动消息处理
-        await Task.Delay(scheduledRebootTime);
-        Logger.Warn("超过config.xml中的自动重启时间，应用将退出，请根据操作系统给配置自动重启（如使用systemd、脚本等）");
-        Environment.Exit(0);
+        if (_botConfig.IsInDebugMode)
+        {
+            await Task.Delay(-1);
+        }
+        else
+        {
+            await Task.Delay(_botConfig.ScheduledRebootTime);
+        }
+        Logger.Warn("超过 config.xml 中的自动重启时间，应用将退出，请根据操作系统给配置自动重启（如使用systemd、脚本等）");
+        return;
+        
+        void StopSession(ICqPostSession session)
+        {
+            switch (_botConfig!.ConnectionType)
+            {
+                case ConnectionType.HTTP:
+                    ((CqRHttpSession)session).Stop();
+                    break;
+                case ConnectionType.WEB_SOCKET:
+                    ((CqWsSession)session).Stop();
+                    break;
+                case ConnectionType.REVERSE_WEB_SOCKET:
+                    ((CqRWsSession)session).Stop();
+                    break;
+            }
+        }
     }
 
     public static TimeSpan GetRunTime()

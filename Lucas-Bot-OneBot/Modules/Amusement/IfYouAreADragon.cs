@@ -7,7 +7,7 @@ namespace Lucas_Bot_OneBot.Modules.Amusement;
 
 internal static class IfYouAreADragon
 {
-    private static List<string> dragonPictures = new();
+    private static readonly List<string> DragonPictures = [];
 
     static IfYouAreADragon()
     {
@@ -18,7 +18,7 @@ internal static class IfYouAreADragon
                 new List<string>()
                 { ".jpg", ".png", ".gif" }.Contains(Path.GetExtension(file).ToLower()))
             {
-                dragonPictures.Add(Path.GetFullPath(file));
+                DragonPictures.Add(Path.GetFullPath(file));
             }
         }
 
@@ -30,7 +30,7 @@ internal static class IfYouAreADragon
         logger.Info($"{CommandBuilder.DefaultCommandSuffix}long指令被唤起，使用者：{commandInfo.SenderId}");
         try
         {
-            var imagePath = dragonPictures[Random.Shared.Next(0, dragonPictures.Count - 1)];
+            var imagePath = DragonPictures[Random.Shared.Next(0, DragonPictures.Count - 1)];
             logger.Info($"图片路径: {imagePath}");
             var imageStream = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             var imageMessage = CqImageMsg.FromStream(imageStream);

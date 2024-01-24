@@ -8,21 +8,24 @@ namespace Lucas_Bot_OneBot.Core;
 
 public static class CommandDispatcher
 {
-    private static Dictionary<string, Action<Command>> CommandHandlers { get; } = new();
+    private static Dictionary<string, CommandHandler> CommandHandlers { get; } = new();
 
-    public static void RegisterCommandHandler(string commandTrigger, Action<Command> commandHandler)
-        => CommandHandlers.Add(commandTrigger, commandHandler);
+    public static void RegisterCommandHandler(string commandTrigger, Action<Command> commandHandler, CommandHandlerType handlerType = CommandHandlerType.GROUP_AND_PRIVATE)
+        => CommandHandlers.Add(commandTrigger, new CommandHandler(commandTrigger, commandHandler, handlerType));
 
     public static async Task GroupCommandDispatchMiddleware(CqGroupMessagePostContext context, Func<Task> next)
     {
-        Program.Logger.Info($"收到群 {context.GroupId} 发送者 {context.UserId} 发送的消息");
+        
+        Program.Logger.Info($"收到 Channel {context.GroupId} 发送者 {context.UserId} 发送的消息");
         try
         {
             var command = CommandBuilder.BuildCommand(context);
             if (CommandHandlers.TryGetValue(command.CommandTrigger, out var entry))
             {
-                Program.Logger.Info($"触发指令： {command.CommandTrigger}");
-                entry.Invoke(command);
+                Program.Logger.Info($"触发指令: {command.CommandTrigger}");
+                Program.Logger.Info($"指令类型: {entry.Type}");
+                if (entry.Type != CommandHandlerType.PRIVATE_ONLY)
+                    entry.Handler.Invoke(command);
             }
             else
             {
@@ -45,7 +48,9 @@ public static class CommandDispatcher
             if (CommandHandlers.TryGetValue(command.CommandTrigger, out var entry))
             {
                 Program.Logger.Info($"触发指令： {command.CommandTrigger}");
-                entry.Invoke(command);
+                Program.Logger.Info($"指令类型: {entry.Type}");
+                if (entry.Type != CommandHandlerType.GROUP_ONLY)
+                    entry.Handler.Invoke(command);
             }
             else
             {
@@ -59,13 +64,13 @@ public static class CommandDispatcher
         await next.Invoke();
     }
 
-    public static async Task DefaultCommandTrigger(Command commandInfo)
+    private static async Task DefaultCommandTrigger(Command commandInfo)
     {
         var logger = Program.Logger;
         var filter = 4;
         var hasPossibleEntry = false;
         logger.Info($"未知指令 {commandInfo.CommandTrigger}，根据Levenshtein Distance算法寻找所有可能结果");
-        var hintMessage = "您可能在寻找以下指令: \n";
+        var hintMessage = " 您可能在寻找以下指令: \n";
         foreach (var kvPair in CommandHandlers)
         {
             var distance = Utilities.GetLevenshteinDistance(commandInfo.CommandTrigger, kvPair.Key);
@@ -83,7 +88,7 @@ public static class CommandDispatcher
             if (hasPossibleEntry)
                 await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
                     commandInfo.GroupId,
-                    new CqMessage(new CqReplyMsg(commandInfo.MessageId), new CqMessage(hintMessage)));
+                    new CqMessage(new CqAtMsg(commandInfo.SenderId), new CqMessage(hintMessage)));
         }
         catch (Exception ex)
         {
