@@ -1,7 +1,20 @@
-﻿using EleCho.GoCqHttpSdk;
+﻿//      ___          ___          ___          ___          ___          ___          ___     
+//     /\  \        /\__\        /\  \        /\  \        /\__\        /\__\        /\  \    
+//    /::\  \      /:/  /        \:\  \      /::\  \      /::|  |      /::|  |      /::\  \   
+//   /:/\ \  \    /:/  /          \:\  \    /:/\:\  \    /:|:|  |     /:|:|  |     /:/\:\  \  
+//  _\:\~\ \  \  /:/  /  ___       \:\  \  /::\~\:\  \  /:/|:|  |__  /:/|:|  |__  /::\~\:\  \ 
+// /\ \:\ \ \__\/:/__/  /\__\_______\:\__\/:/\:\ \:\__\/:/ |:| /\__\/:/ |:| /\__\/:/\:\ \:\__\
+// \:\ \:\ \/__/\:\  \ /:/  /\::::::::/__/\/__\:\/:/  /\/__|:|/:/  /\/__|:|/:/  /\:\~\:\ \/__/
+//  \:\ \:\__\   \:\  /:/  /  \:\~~\~~         \::/  /     |:/:/  /     |:/:/  /  \:\ \:\__\  
+//   \:\/:/  /    \:\/:/  /    \:\  \          /:/  /      |::/  /      |::/  /    \:\ \/__/  
+//    \::/  /      \::/  /      \:\__\        /:/  /       /:/  /       /:/  /      \:\__\    
+//     \/__/        \/__/        \/__/        \/__/        \/__/        \/__/        \/__/    
+
+using EleCho.GoCqHttpSdk;
 using EleCho.GoCqHttpSdk.Message;
 using Lucas_Bot_OneBot.Core;
 using Lucas_Bot_OneBot.Entities;
+using Lucas_Bot_OneBot.Helpers;
 
 namespace Lucas_Bot_OneBot.Modules.Amusement;
 
@@ -12,11 +25,13 @@ internal static class IfYouAreADragon
     static IfYouAreADragon()
     {
         var files = Directory.GetFiles("assets/long");
+        var extension = new List<string> { ".jpg", ".png" };
+        if (Program.GetDeployedPlatformType() == PlatformType.OPEN_SHAMROCK)
+            extension.Add( ".gif" );
         foreach (var file in files)
         {
             if (File.Exists(file) &&
-                new List<string>()
-                { ".jpg", ".png", ".gif" }.Contains(Path.GetExtension(file).ToLower()))
+                extension.Contains(Path.GetExtension(file).ToLower()))
             {
                 DragonPictures.Add(Path.GetFullPath(file));
             }
@@ -35,9 +50,9 @@ internal static class IfYouAreADragon
             var imageStream = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             var imageMessage = CqImageMsg.FromStream(imageStream);
             // var imageMessage = CqImageMsg.FromFile(imagePath);
-            await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                commandInfo.GroupId,
-                new CqMessage(imageMessage));
+            await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                commandInfo.GroupId, commandInfo.MessageId,
+                new CqMessage(imageMessage), withReply: false);
             logger.Info("发送图片成功");
         }
         catch (Exception ex)

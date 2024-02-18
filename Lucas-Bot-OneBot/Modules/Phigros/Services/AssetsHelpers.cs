@@ -1,7 +1,20 @@
-﻿using EleCho.GoCqHttpSdk;
+﻿//      ___          ___          ___          ___          ___          ___          ___     
+//     /\  \        /\__\        /\  \        /\  \        /\__\        /\__\        /\  \    
+//    /::\  \      /:/  /        \:\  \      /::\  \      /::|  |      /::|  |      /::\  \   
+//   /:/\ \  \    /:/  /          \:\  \    /:/\:\  \    /:|:|  |     /:|:|  |     /:/\:\  \  
+//  _\:\~\ \  \  /:/  /  ___       \:\  \  /::\~\:\  \  /:/|:|  |__  /:/|:|  |__  /::\~\:\  \ 
+// /\ \:\ \ \__\/:/__/  /\__\_______\:\__\/:/\:\ \:\__\/:/ |:| /\__\/:/ |:| /\__\/:/\:\ \:\__\
+// \:\ \:\ \/__/\:\  \ /:/  /\::::::::/__/\/__\:\/:/  /\/__|:|/:/  /\/__|:|/:/  /\:\~\:\ \/__/
+//  \:\ \:\__\   \:\  /:/  /  \:\~~\~~         \::/  /     |:/:/  /     |:/:/  /  \:\ \:\__\  
+//   \:\/:/  /    \:\/:/  /    \:\  \          /:/  /      |::/  /      |::/  /    \:\ \/__/  
+//    \::/  /      \::/  /      \:\__\        /:/  /       /:/  /       /:/  /      \:\__\    
+//     \/__/        \/__/        \/__/        \/__/        \/__/        \/__/        \/__/    
+
+using EleCho.GoCqHttpSdk;
 using EleCho.GoCqHttpSdk.Message;
 using Lucas_Bot_OneBot.Core;
 using Lucas_Bot_OneBot.Entities;
+using Lucas_Bot_OneBot.Helpers;
 using SkiaSharp;
 using static Phigros_Library_FSharp.PhigrosAPIException;
 
@@ -34,11 +47,12 @@ internal static class AssetsHelpers
 
             var image = SKBitmap.Decode(result.Illustration);
             var stream = new MemoryStream();
-            image.Encode(stream, SKEncodedImageFormat.Png, 50);
+            // Update: X64 Image Upload Speed
+            image.Encode(stream, SKEncodedImageFormat.Jpeg, 50);
 
-            var replyMessage = new CqMessage(new CqAtMsg(commandInfo.SenderId))
+            var replyMessage = new CqMessage
         {
-            $"\n歌曲名称: {result.SongName}\n",
+            $"歌曲名称: {result.SongName}\n",
             $"歌曲ID: {result.SongId}\n",
             $"曲师: {result.Composer}\n",
             $"曲绘画师: {result.Illustrator}\n",
@@ -52,10 +66,12 @@ internal static class AssetsHelpers
                 replyMessage.Add($"谱师: {chart.Value.Charter} ]\n");
             }
             logger.Info($"曲绘绝对路径：{Path.GetFullPath(result.Illustration)}");
-            await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                   commandInfo.GroupId, replyMessage);
-            await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                   commandInfo.GroupId, new CqMessage(CqImageMsg.FromBytes(stream.ToArray())));
+            await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                   commandInfo.GroupId, commandInfo.MessageId, replyMessage);
+            await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                   commandInfo.GroupId, commandInfo.MessageId,
+                   new CqMessage(CqImageMsg.FromBytes(stream.ToArray())),
+                   withReply: false);
         }
         catch (PhigrosAPIException e)
         {
@@ -82,15 +98,15 @@ internal static class AssetsHelpers
         try
         {
             if (suggestsState != AssetsQueryState.SUCCESS)
-                await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                    commandInfo.GroupId,
-                    new CqMessage(new CqReplyMsg(commandInfo.MessageId), new CqMessage(hintMessage)));
+                await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                    commandInfo.GroupId, commandInfo.MessageId,
+                    new CqMessage(hintMessage));
         }
         catch (Exception ex)
         {
             logger.Error("出现异常：", ex);
         }
 
-        logger.Info($"song 查询状态：{suggestsState}");
+        logger.Info($"suggest 查询状态：{suggestsState}");
     }
 }

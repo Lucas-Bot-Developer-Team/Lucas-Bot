@@ -311,7 +311,7 @@ let GenerateB19ImageAsync
         // use imageStream = new SKFileWStream(path)
         // image.Encode(imageStream, SKEncodedImageFormat.Png, 100) |> ignore
         use imageStream = new MemoryStream()
-        image.Encode(imageStream, SKEncodedImageFormat.Png, 50) |> ignore
+        image.Encode(imageStream, SKEncodedImageFormat.Jpeg, 50) |> ignore
         return imageStream.GetBuffer()
         
         // return path 

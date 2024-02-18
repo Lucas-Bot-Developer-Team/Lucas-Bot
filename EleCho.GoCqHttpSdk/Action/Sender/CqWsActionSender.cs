@@ -78,6 +78,7 @@ namespace EleCho.GoCqHttpSdk.Action.Sender
 
             // 序列化
             string json = JsonSerializer.Serialize(actionModel, JsonHelper.Options);
+            // Console.WriteLine($"WebSocket sent: {json}");
             byte[] buffer = GlobalConfig.TextEncoding.GetBytes(json);
 
             // 发送请求

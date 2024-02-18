@@ -1,3 +1,15 @@
+//      ___          ___          ___          ___          ___          ___          ___     
+//     /\  \        /\__\        /\  \        /\  \        /\__\        /\__\        /\  \    
+//    /::\  \      /:/  /        \:\  \      /::\  \      /::|  |      /::|  |      /::\  \   
+//   /:/\ \  \    /:/  /          \:\  \    /:/\:\  \    /:|:|  |     /:|:|  |     /:/\:\  \  
+//  _\:\~\ \  \  /:/  /  ___       \:\  \  /::\~\:\  \  /:/|:|  |__  /:/|:|  |__  /::\~\:\  \ 
+// /\ \:\ \ \__\/:/__/  /\__\_______\:\__\/:/\:\ \:\__\/:/ |:| /\__\/:/ |:| /\__\/:/\:\ \:\__\
+// \:\ \:\ \/__/\:\  \ /:/  /\::::::::/__/\/__\:\/:/  /\/__|:|/:/  /\/__|:|/:/  /\:\~\:\ \/__/
+//  \:\ \:\__\   \:\  /:/  /  \:\~~\~~         \::/  /     |:/:/  /     |:/:/  /  \:\ \:\__\  
+//   \:\/:/  /    \:\/:/  /    \:\  \          /:/  /      |::/  /      |::/  /    \:\ \/__/  
+//    \::/  /      \::/  /      \:\__\        /:/  /       /:/  /       /:/  /      \:\__\    
+//     \/__/        \/__/        \/__/        \/__/        \/__/        \/__/        \/__/    
+
 using System.Diagnostics;
 using EleCho.GoCqHttpSdk;
 using log4net;
@@ -78,7 +90,7 @@ internal static class Utilities
         return new TimeSpan(time.Days, time.Hours, time.Minutes, time.Seconds);
     }
 
-    public static async Task<string> GetAvatarUri(long qq, long groupId = 0)
+    public static string GetAvatarUri(long qq)
     {
         // var result = await Program.HttpSession.Get
         // Logger.Info(result!.ToString());
@@ -91,6 +103,7 @@ internal static class Utilities
         var startTime = DateTime.UtcNow;
         var startCpuUsage = Process.GetCurrentProcess().TotalProcessorTime;
 
+        // Update: Reduce Delay Time, Improve Performance
         await Task.Delay(500);
 
         var endTime = DateTime.UtcNow;
@@ -117,32 +130,32 @@ internal static class Utilities
     /// <returns>Levenshtein Distance</returns>
     public static int GetLevenshteinDistance(string lhs, string rhs)
     {
-        int m = lhs.Length;
-        int n = rhs.Length;
-        var L = new int[m + 1, n + 1];
+        var m = lhs.Length;
+        var n = rhs.Length;
+        var l = new int[m + 1, n + 1];
         for (var i = 0; i <= m; i++)
         {
             for (var j = 0; j <= n; j++)
             {
                 if (i == 0 || j == 0)
                 {
-                    L[i, j] = 0;
+                    l[i, j] = 0;
                 }
                 else if (lhs[i - 1] == rhs[j - 1])
                 {
-                    L[i, j] = L[i - 1, j - 1] + 1;
+                    l[i, j] = l[i - 1, j - 1] + 1;
                 }
                 else
                 {
-                    L[i, j] = Math.Max(L[i - 1, j], L[i, j - 1]);
+                    l[i, j] = Math.Max(l[i - 1, j], l[i, j - 1]);
                 }
             }
         }
-        int lcs = L[m, n];
+        var lcs = l[m, n];
         return m - lcs + n - lcs;
     }
 
-    public static string[] GetLogo()
+    public static IEnumerable<string> GetLogo()
     {
         return """
                ----------------------------------------------------------------------
@@ -155,7 +168,7 @@ internal static class Utilities
                /  \__$$ |$$ \__$$ | /$$$$/__ /$$$$$$$ |$$ |  $$ |$$ |  $$ |$$$$$$$$/ 
                $$    $$/ $$    $$/ /$$      |$$    $$ |$$ |  $$ |$$ |  $$ |$$       |
                 $$$$$$/   $$$$$$/  $$$$$$$$/  $$$$$$$/ $$/   $$/ $$/   $$/  $$$$$$$/ 
-               ----------------------------------------------------------------------                                                         
+               ----------------------------------------------------------------------
                """.Split('\n');
     }
 }

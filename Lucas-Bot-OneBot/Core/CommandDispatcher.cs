@@ -1,3 +1,16 @@
+//      ___          ___          ___          ___          ___          ___          ___     
+//     /\  \        /\__\        /\  \        /\  \        /\__\        /\__\        /\  \    
+//    /::\  \      /:/  /        \:\  \      /::\  \      /::|  |      /::|  |      /::\  \   
+//   /:/\ \  \    /:/  /          \:\  \    /:/\:\  \    /:|:|  |     /:|:|  |     /:/\:\  \  
+//  _\:\~\ \  \  /:/  /  ___       \:\  \  /::\~\:\  \  /:/|:|  |__  /:/|:|  |__  /::\~\:\  \ 
+// /\ \:\ \ \__\/:/__/  /\__\_______\:\__\/:/\:\ \:\__\/:/ |:| /\__\/:/ |:| /\__\/:/\:\ \:\__\
+// \:\ \:\ \/__/\:\  \ /:/  /\::::::::/__/\/__\:\/:/  /\/__|:|/:/  /\/__|:|/:/  /\:\~\:\ \/__/
+//  \:\ \:\__\   \:\  /:/  /  \:\~~\~~         \::/  /     |:/:/  /     |:/:/  /  \:\ \:\__\  
+//   \:\/:/  /    \:\/:/  /    \:\  \          /:/  /      |::/  /      |::/  /    \:\ \/__/  
+//    \::/  /      \::/  /      \:\__\        /:/  /       /:/  /       /:/  /      \:\__\    
+//     \/__/        \/__/        \/__/        \/__/        \/__/        \/__/        \/__/    
+
+
 using EleCho.GoCqHttpSdk.Message;
 using EleCho.GoCqHttpSdk;
 using EleCho.GoCqHttpSdk.Post;
@@ -10,6 +23,7 @@ public static class CommandDispatcher
 {
     private static Dictionary<string, CommandHandler> CommandHandlers { get; } = new();
 
+    // TODO: 增加指令分组（虽然我也不知道多久能写完，但是先放一个在这儿，万一有人闲得无聊翻repo看到了呢）
     public static void RegisterCommandHandler(string commandTrigger, Action<Command> commandHandler, CommandHandlerType handlerType = CommandHandlerType.GROUP_AND_PRIVATE)
         => CommandHandlers.Add(commandTrigger, new CommandHandler(commandTrigger, commandHandler, handlerType));
 
@@ -67,28 +81,38 @@ public static class CommandDispatcher
     private static async Task DefaultCommandTrigger(Command commandInfo)
     {
         var logger = Program.Logger;
-        var filter = 4;
+        const int filter = 4;
         var hasPossibleEntry = false;
+        
+        // QQ 频道 - 公域机器人兜底回复，告知审核已无隐藏指令，防止打回
+        // （ 防止根据算法查找所有已有指令时发现隐藏指令 ）
+        if (Program.GetDeployedPlatformType() is PlatformType.QQ_GUILD)
+        {
+            logger.Info($"未知指令 {commandInfo.CommandTrigger}，触发频道机器人兜底回复");
+            await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                commandInfo.GroupId, commandInfo.MessageId,
+                new CqMessage("你输入的指令不对哦，请查看机器人帮助列表获取可用指令"));
+            return;
+        }
+        
         logger.Info($"未知指令 {commandInfo.CommandTrigger}，根据Levenshtein Distance算法寻找所有可能结果");
-        var hintMessage = " 您可能在寻找以下指令: \n";
+        var hintMessage = "您可能在寻找以下指令: \n";
         foreach (var kvPair in CommandHandlers)
         {
             var distance = Utilities.GetLevenshteinDistance(commandInfo.CommandTrigger, kvPair.Key);
-            if (distance <= filter)
-            {
-                logger.Info($"{commandInfo.CommandTrigger} -> {kvPair.Key}: distance = {distance}");
-                hasPossibleEntry = true;
-                hintMessage += $"{CommandBuilder.DefaultCommandSuffix}{kvPair.Key} (相似度: {(filter - distance) / 2.0:F1})\n";
-            }
+            if (distance > filter) continue;
+            logger.Info($"{commandInfo.CommandTrigger} -> {kvPair.Key}: distance = {distance}");
+            hasPossibleEntry = true;
+            hintMessage += $"{CommandBuilder.DefaultCommandSuffix}{kvPair.Key} (相似度: {(filter - distance) / 2.0:F1})\n";
         }
         hintMessage = hintMessage.Remove(hintMessage.Length - 1);
 
         try
         {
             if (hasPossibleEntry)
-                await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                    commandInfo.GroupId,
-                    new CqMessage(new CqAtMsg(commandInfo.SenderId), new CqMessage(hintMessage)));
+                await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                    commandInfo.GroupId, commandInfo.MessageId,
+                    new CqMessage(hintMessage));
         }
         catch (Exception ex)
         {

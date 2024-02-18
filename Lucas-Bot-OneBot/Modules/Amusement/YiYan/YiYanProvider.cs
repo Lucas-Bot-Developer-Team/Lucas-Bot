@@ -1,14 +1,26 @@
+//      ___          ___          ___          ___          ___          ___          ___     
+//     /\  \        /\__\        /\  \        /\  \        /\__\        /\__\        /\  \    
+//    /::\  \      /:/  /        \:\  \      /::\  \      /::|  |      /::|  |      /::\  \   
+//   /:/\ \  \    /:/  /          \:\  \    /:/\:\  \    /:|:|  |     /:|:|  |     /:/\:\  \  
+//  _\:\~\ \  \  /:/  /  ___       \:\  \  /::\~\:\  \  /:/|:|  |__  /:/|:|  |__  /::\~\:\  \ 
+// /\ \:\ \ \__\/:/__/  /\__\_______\:\__\/:/\:\ \:\__\/:/ |:| /\__\/:/ |:| /\__\/:/\:\ \:\__\
+// \:\ \:\ \/__/\:\  \ /:/  /\::::::::/__/\/__\:\/:/  /\/__|:|/:/  /\/__|:|/:/  /\:\~\:\ \/__/
+//  \:\ \:\__\   \:\  /:/  /  \:\~~\~~         \::/  /     |:/:/  /     |:/:/  /  \:\ \:\__\  
+//   \:\/:/  /    \:\/:/  /    \:\  \          /:/  /      |::/  /      |::/  /    \:\ \/__/  
+//    \::/  /      \::/  /      \:\__\        /:/  /       /:/  /       /:/  /      \:\__\    
+//     \/__/        \/__/        \/__/        \/__/        \/__/        \/__/        \/__/    
+
 using EleCho.GoCqHttpSdk.Message;
 using EleCho.GoCqHttpSdk;
 using Lucas_Bot_OneBot.Core;
 using Lucas_Bot_OneBot.Entities;
 using System.Text;
+using Lucas_Bot_OneBot.Helpers;
 
 namespace Lucas_Bot_OneBot.Modules.Amusement.YiYan;
 
 public static class YiYanProvider
 {
-    // TODO: 想到啥就写啥吧，最近实在想不出啥想写的
 
     public static string GetTextMsg(this CqEssenceMessage essenceMessage)
     {
@@ -122,8 +134,9 @@ public static class YiYanProvider
 
         try
         {
-            await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId, commandInfo.GroupId,
-                new CqMessage(new CqReplyMsg(commandInfo.MessageId), new CqMessage(hintMessage)));
+            await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId, 
+                commandInfo.GroupId, commandInfo.MessageId,
+                new CqMessage(hintMessage));
         }
         catch (Exception ex)
         {

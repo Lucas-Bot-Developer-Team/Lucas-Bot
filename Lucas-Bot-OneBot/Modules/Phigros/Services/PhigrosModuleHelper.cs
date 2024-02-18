@@ -1,3 +1,15 @@
+//      ___          ___          ___          ___          ___          ___          ___     
+//     /\  \        /\__\        /\  \        /\  \        /\__\        /\__\        /\  \    
+//    /::\  \      /:/  /        \:\  \      /::\  \      /::|  |      /::|  |      /::\  \   
+//   /:/\ \  \    /:/  /          \:\  \    /:/\:\  \    /:|:|  |     /:|:|  |     /:/\:\  \  
+//  _\:\~\ \  \  /:/  /  ___       \:\  \  /::\~\:\  \  /:/|:|  |__  /:/|:|  |__  /::\~\:\  \ 
+// /\ \:\ \ \__\/:/__/  /\__\_______\:\__\/:/\:\ \:\__\/:/ |:| /\__\/:/ |:| /\__\/:/\:\ \:\__\
+// \:\ \:\ \/__/\:\  \ /:/  /\::::::::/__/\/__\:\/:/  /\/__|:|/:/  /\/__|:|/:/  /\:\~\:\ \/__/
+//  \:\ \:\__\   \:\  /:/  /  \:\~~\~~         \::/  /     |:/:/  /     |:/:/  /  \:\ \:\__\  
+//   \:\/:/  /    \:\/:/  /    \:\  \          /:/  /      |::/  /      |::/  /    \:\ \/__/  
+//    \::/  /      \::/  /      \:\__\        /:/  /       /:/  /       /:/  /      \:\__\    
+//     \/__/        \/__/        \/__/        \/__/        \/__/        \/__/        \/__/    
+
 using Phigros_Library_FSharp;
 
 namespace Lucas_Bot_OneBot.Modules.Phigros.Services;
@@ -33,7 +45,7 @@ public static class PhigrosModuleHelper
         logger.Info($"{CommandBuilder.DefaultCommandSuffix}b19指令被唤起，使用者：{commandInfo.SenderId}");
         var bestImageGenerationState = PhigrosModuleOperationState.SUCCESS;
         var collection = Utilities.GetCollection("phi", "sessionToken");
-        var queryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("gensokyoId", commandInfo.SenderId.ToString()));
+        var queryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("qq", commandInfo.SenderId.ToString()));
         logger.Info("从数据库中查询SessionToken");
         var queryFailedReason = "";
         if (!await queryResult.AnyAsync())
@@ -44,9 +56,9 @@ public static class PhigrosModuleHelper
             logger.Info("已查询到SessionToken, 准备进入FSharp层");
             try
             {
-                await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                    commandInfo.GroupId,
-                    new CqMessage(new CqAtMsg(commandInfo.SenderId), new CqMessage(" 已知晓您的请求。正在生成 Best19 查分图，耗时可能较长，请耐心等待。")));
+                await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                    commandInfo.GroupId, commandInfo.MessageId,
+                    new CqMessage("已知晓您的请求。正在生成 Best19 查分图，耗时可能较长，请耐心等待。"));
             }
             catch (Exception ex)
             {
@@ -59,7 +71,7 @@ public static class PhigrosModuleHelper
             try
             {
                 var avatarUri = ""; //await Utilities.GetAvatarUri(commandInfo.SenderId, commandInfo.GroupId ?? 0);
-                var avatarQueryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("gensokyoId", commandInfo.SenderId.ToString()));
+                var avatarQueryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("qq", commandInfo.SenderId.ToString()));
                 if (await avatarQueryResult.AnyAsync())
                 {
                     var useGameAvatar = queryResult.First();
@@ -71,9 +83,19 @@ public static class PhigrosModuleHelper
                     }
                     else
                     {
-                        var tapAvatar = await WrapFSharpAsync(phigrosUser.getTapTapAvatarAsync());
-                        logger.Info($"avatar = {tapAvatar}");
-                        avatarUri = tapAvatar;
+                        if (Program.GetDeployedPlatformType() 
+                            is PlatformType.LAGRANGE_CORE
+                            or PlatformType.OPEN_SHAMROCK)
+                        {
+                            avatarUri = Utilities.GetAvatarUri(commandInfo.SenderId);
+                        }
+                        else
+                        {
+                            
+                            var tapAvatar = await WrapFSharpAsync(phigrosUser.getTapTapAvatarAsync());
+                            logger.Info($"avatar = {tapAvatar}");
+                            avatarUri = tapAvatar;
+                        }
                     }
                 }
                 var best19ImageData =
@@ -84,27 +106,29 @@ public static class PhigrosModuleHelper
                 switch (commandInfo.MessageType)
                 {
                     case CqMessageType.Group:
-                        await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                            commandInfo.GroupId,
-                            new CqMessage(new CqAtMsg(commandInfo.SenderId), CqImageMsg.FromBytes(best19ImageData)));
+                        await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                            commandInfo.GroupId, commandInfo.MessageId,
+                            new CqMessage(new CqAtMsg(commandInfo.SenderId), CqImageMsg.FromBytes(best19ImageData)),
+                            withReply: false);
                         break;
                     default:
-                        await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                            commandInfo.GroupId,
-                            new CqMessage(CqImageMsg.FromBytes(best19ImageData)));
+                        await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                            commandInfo.GroupId, commandInfo.MessageId,
+                            new CqMessage(CqImageMsg.FromBytes(best19ImageData)),
+                            withReply: false);
                         break;
                 }
             }
             catch (PhigrosAPIException e)
             {
                 logger.Error("FSharp层出现异常", e);
-                queryFailedReason = $"\n[PhigrosAPIException]\n{e.Data0}";
+                queryFailedReason = $"[PhigrosAPIException]\n{e.Data0}";
                 bestImageGenerationState = PhigrosModuleOperationState.ERR_INTERNAL;
             }
             catch (Exception e)
             {
                 logger.Error("出现其他异常：", e);
-                queryFailedReason = $"\n[{e.GetType()}]\n{e.Message}";
+                queryFailedReason = $"[{e.GetType()}]\n{e.Message}";
                 bestImageGenerationState = PhigrosModuleOperationState.ERR_INTERNAL;
             }
         }
@@ -112,7 +136,7 @@ public static class PhigrosModuleHelper
         var hintMessage = bestImageGenerationState switch
         {
             PhigrosModuleOperationState.SUCCESS => "",
-            PhigrosModuleOperationState.ERR_NOT_BOUND => $" 您未绑定。请先使用{CommandBuilder.DefaultCommandSuffix}bind指令完成绑定。",
+            PhigrosModuleOperationState.ERR_NOT_BOUND => $"您未绑定。请先使用{CommandBuilder.DefaultCommandSuffix}bind指令完成绑定。",
             PhigrosModuleOperationState.ERR_INTERNAL => queryFailedReason,
             PhigrosModuleOperationState.ERR_INSTRUCTION_FORMAT => throw new ArgumentOutOfRangeException(nameof(commandInfo)),
             _ => throw new ArgumentOutOfRangeException(nameof(commandInfo))
@@ -122,9 +146,9 @@ public static class PhigrosModuleHelper
         if (bestImageGenerationState == PhigrosModuleOperationState.SUCCESS) return;
         try
         {
-            await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                commandInfo.GroupId,
-                new CqMessage(new CqAtMsg(commandInfo.SenderId), new CqMessage(hintMessage)));
+            await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                commandInfo.GroupId, commandInfo.MessageId,
+                new CqMessage(hintMessage));
         }
         catch (Exception ex)
         {
@@ -150,7 +174,7 @@ public static class PhigrosModuleHelper
         if (bestsState == PhigrosModuleOperationState.SUCCESS)
         {
             var collection = Utilities.GetCollection("phi", "sessionToken");
-            var queryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("gensokyoId", commandInfo.SenderId.ToString()));
+            var queryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("qq", commandInfo.SenderId.ToString()));
             logger.Info("从数据库中查询SessionToken");
             if (!await queryResult.AnyAsync())
                 bestsState = PhigrosModuleOperationState.ERR_NOT_BOUND;
@@ -189,13 +213,13 @@ public static class PhigrosModuleHelper
                 catch (PhigrosAPIException e)
                 {
                     logger.Error("FSharp层出现异常", e);
-                    hintMessage = $"\n[PhigrosAPIException]\n{e.Data0}";
+                    hintMessage = $"[PhigrosAPIException]\n{e.Data0}";
                     bestsState = PhigrosModuleOperationState.ERR_INTERNAL;
                 }
                 catch (Exception e)
                 {
                     logger.Error("出现其他异常：", e);
-                    hintMessage = $"\n[{e.GetType()}]\n{e.Message}";
+                    hintMessage = $"[{e.GetType()}]\n{e.Message}";
                     bestsState = PhigrosModuleOperationState.ERR_INTERNAL;
                 }
             }
@@ -218,21 +242,21 @@ public static class PhigrosModuleHelper
                 {
                     await Program.HttpSession.SendPrivateMessageAsync(commandInfo.SenderId, new CqMessage(hintMessage));
                     if (commandInfo.MessageType == CqMessageType.Group)
-                        await Program.HttpSession.SendGroupMessageAsync(commandInfo.GroupId!.Value, new CqMessage(
-                            new CqAtMsg(commandInfo.SenderId),
-                            new CqMessage(" 消息过长，请在私聊中查看（如果您没有收到私聊消息，请检查是否允许陌生人私聊或添加好友）")));
+                        await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                            commandInfo.GroupId, commandInfo.MessageId,
+                            new CqMessage("消息过长，请在私聊中查看（如果您没有收到私聊消息，请检查是否允许陌生人私聊或添加好友）"));
                 }
                 catch (Exception)
                 {
-                    hintMessage = " 私聊消息发送失败，请检查是否允许陌生人私聊或添加好友";
+                    hintMessage = "私聊消息发送失败，请检查是否允许陌生人私聊或添加好友";
                     bestsState = PhigrosModuleOperationState.ERR_INTERNAL;
                 }
             }
 
             if (bestsState != PhigrosModuleOperationState.SUCCESS)
-                await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                    commandInfo.GroupId,
-                    new CqMessage(new CqAtMsg(commandInfo.SenderId), new CqMessage(hintMessage)));
+                await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                    commandInfo.GroupId, commandInfo.MessageId,
+                    new CqMessage(hintMessage));
         }
         catch (Exception ex)
         {
@@ -250,7 +274,7 @@ public static class PhigrosModuleHelper
 
         logger.Info($"{CommandBuilder.DefaultCommandSuffix}suggest指令被唤起，使用者：{commandInfo.SenderId}");
         var collection = Utilities.GetCollection("phi", "sessionToken");
-        var queryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("gensokyoId", commandInfo.SenderId.ToString()));
+        var queryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("qq", commandInfo.SenderId.ToString()));
         logger.Info("从数据库中查询SessionToken");
         if (!await queryResult.AnyAsync())
             suggestsState = PhigrosModuleOperationState.ERR_NOT_BOUND;
@@ -266,7 +290,7 @@ public static class PhigrosModuleHelper
                 var probeN = ProbeSuggestion(playRecords);
                 var probedPlayRecords = probeN as GameSave.PlayRecord[] ?? probeN.ToArray();
                 var count = probedPlayRecords.Length;
-                var stringBuilder = new StringBuilder("\n[推荐推分曲目]\n");
+                var stringBuilder = new StringBuilder("[推荐推分曲目]\n");
 
                 if (count != 0)
                 {
@@ -288,13 +312,13 @@ public static class PhigrosModuleHelper
             catch (PhigrosAPIException e)
             {
                 logger.Error("FSharp层出现异常", e);
-                hintMessage = $"\n[PhigrosAPIException]\n{e.Data0}";
+                hintMessage = $"[PhigrosAPIException]\n{e.Data0}";
                 suggestsState = PhigrosModuleOperationState.ERR_INTERNAL;
             }
             catch (Exception e)
             {
                 logger.Error("出现其他异常：", e);
-                hintMessage = $"\n[{e.GetType()}]\n{e.Message}";
+                hintMessage = $"[{e.GetType()}]\n{e.Message}";
                 suggestsState = PhigrosModuleOperationState.ERR_INTERNAL;
             }
         }
@@ -310,9 +334,9 @@ public static class PhigrosModuleHelper
 
         try
         {
-            await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                commandInfo.GroupId,
-                new CqMessage(new CqAtMsg(commandInfo.SenderId), new CqMessage(hintMessage)));
+            await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                commandInfo.GroupId, commandInfo.MessageId,
+                new CqMessage(hintMessage));
         }
         catch (Exception ex)
         {
@@ -330,7 +354,7 @@ public static class PhigrosModuleHelper
 
         logger.Info($"{CommandBuilder.DefaultCommandSuffix}info指令被唤起，使用者：{commandInfo.SenderId}");
         var collection = Utilities.GetCollection("phi", "sessionToken");
-        var queryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("gensokyoId", commandInfo.SenderId.ToString()));
+        var queryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("qq", commandInfo.SenderId.ToString()));
         logger.Info("从数据库中查询SessionToken");
         if (!await queryResult.AnyAsync())
             suggestsState = PhigrosModuleOperationState.ERR_NOT_BOUND;
@@ -357,13 +381,13 @@ public static class PhigrosModuleHelper
             catch (PhigrosAPIException e)
             {
                 logger.Error("FSharp层出现异常", e);
-                hintMessage = $"\n[PhigrosAPIException]\n{e.Data0}";
+                hintMessage = $"[PhigrosAPIException]\n{e.Data0}";
                 suggestsState = PhigrosModuleOperationState.ERR_INTERNAL;
             }
             catch (Exception e)
             {
                 logger.Error("出现其他异常：", e);
-                hintMessage = $"\n[{e.GetType()}]\n{e.Message}";
+                hintMessage = $"[{e.GetType()}]\n{e.Message}";
                 suggestsState = PhigrosModuleOperationState.ERR_INTERNAL;
             }
         }
@@ -371,7 +395,7 @@ public static class PhigrosModuleHelper
         hintMessage = suggestsState switch
         {
             PhigrosModuleOperationState.SUCCESS => hintMessage,
-            PhigrosModuleOperationState.ERR_NOT_BOUND => $" 您未绑定。请先使用{CommandBuilder.DefaultCommandSuffix}bind指令完成绑定。",
+            PhigrosModuleOperationState.ERR_NOT_BOUND => $"您未绑定。请先使用{CommandBuilder.DefaultCommandSuffix}bind指令完成绑定。",
             PhigrosModuleOperationState.ERR_INTERNAL => hintMessage,
             PhigrosModuleOperationState.ERR_INSTRUCTION_FORMAT => throw new ArgumentOutOfRangeException(nameof(commandInfo)),
             _ => throw new ArgumentOutOfRangeException(nameof(commandInfo))
@@ -379,9 +403,9 @@ public static class PhigrosModuleHelper
 
         try
         {
-            await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                commandInfo.GroupId,
-                new CqMessage(new CqAtMsg(commandInfo.SenderId), new CqMessage(hintMessage)));
+            await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                commandInfo.GroupId, commandInfo.MessageId,
+                new CqMessage(hintMessage));
         }
         catch (Exception ex)
         {
@@ -399,7 +423,7 @@ public static class PhigrosModuleHelper
 
         logger.Info($"{CommandBuilder.DefaultCommandSuffix}acc指令被唤起，使用者：{commandInfo.SenderId}");
         var collection = Utilities.GetCollection("phi", "sessionToken");
-        var queryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("gensokyoId", commandInfo.SenderId.ToString()));
+        var queryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("qq", commandInfo.SenderId.ToString()));
         logger.Info("从数据库中查询SessionToken");
         if (!await queryResult.AnyAsync())
             suggestsState = PhigrosModuleOperationState.ERR_NOT_BOUND;
@@ -413,19 +437,19 @@ public static class PhigrosModuleHelper
             {
                 var playRecords = await WrapFSharpAsync(phigrosUser.getPlayRecordList());
                 var playRecord = GetPlayRecordFromUserInput(commandInfo.Parameters, playRecords);
-                hintMessage = '\n' + FormatPlayRecord(playRecord, playRecords);
+                hintMessage = FormatPlayRecord(playRecord, playRecords);
                 logger.Info("玩家信息查询成功，已从FSharp层退出");
             }
             catch (PhigrosAPIException e)
             {
                 logger.Error("FSharp层出现异常", e);
-                hintMessage = $"\n[PhigrosAPIException]\n{e.Data0}";
+                hintMessage = $"[PhigrosAPIException]\n{e.Data0}";
                 suggestsState = PhigrosModuleOperationState.ERR_INTERNAL;
             }
             catch (Exception e)
             {
                 logger.Error("出现其他异常：", e);
-                hintMessage = $"\n[{e.GetType()}]\n{e.Message}";
+                hintMessage = $"[{e.GetType()}]\n{e.Message}";
                 suggestsState = PhigrosModuleOperationState.ERR_INTERNAL;
             }
         }
@@ -433,7 +457,7 @@ public static class PhigrosModuleHelper
         hintMessage = suggestsState switch
         {
             PhigrosModuleOperationState.SUCCESS => hintMessage,
-            PhigrosModuleOperationState.ERR_NOT_BOUND => $" 您未绑定。请先使用{CommandBuilder.DefaultCommandSuffix}bind指令完成绑定。",
+            PhigrosModuleOperationState.ERR_NOT_BOUND => $"您未绑定。请先使用{CommandBuilder.DefaultCommandSuffix}bind指令完成绑定。",
             PhigrosModuleOperationState.ERR_INTERNAL => hintMessage,
             PhigrosModuleOperationState.ERR_INSTRUCTION_FORMAT => throw new ArgumentOutOfRangeException(nameof(commandInfo)),
             _ => throw new ArgumentOutOfRangeException(nameof(commandInfo))
@@ -441,9 +465,9 @@ public static class PhigrosModuleHelper
 
         try
         {
-            await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                commandInfo.GroupId,
-                new CqMessage(new CqAtMsg(commandInfo.SenderId), new CqMessage(hintMessage)));
+            await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                commandInfo.GroupId, commandInfo.MessageId,
+                new CqMessage(hintMessage));
         }
         catch (Exception ex)
         {
@@ -487,7 +511,7 @@ public static class PhigrosModuleHelper
 
         logger.Info($"{CommandBuilder.DefaultCommandSuffix}batch指令被唤起，使用者：{commandInfo.SenderId}");
         var collection = Utilities.GetCollection("phi", "sessionToken");
-        var queryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("gensokyoId", commandInfo.SenderId.ToString()));
+        var queryResult = collection.Find(Builders<BsonDocument>.Filter.Eq("qq", commandInfo.SenderId.ToString()));
         logger.Info("从数据库中查询SessionToken");
         if (!await queryResult.AnyAsync())
             batchState = PhigrosModuleOperationState.ERR_NOT_BOUND;
@@ -503,7 +527,7 @@ public static class PhigrosModuleHelper
                 var batchRecords = GetPlayRecordsBatch(prescribedMinimum, superiorLimit, playRecords);
                 var records = batchRecords as GameSave.PlayRecord[] ?? batchRecords.ToArray();
                 count = records.Length;
-                var stringBuilder = new StringBuilder($"\n[批量查分结果]\n");
+                var stringBuilder = new StringBuilder($"[批量查分结果]\n");
 
                 if (count != 0)
                 {
@@ -555,28 +579,28 @@ public static class PhigrosModuleHelper
                     {
                         await Program.HttpSession.SendPrivateMessageAsync(commandInfo.SenderId, new CqMessage(hintMessage));
                         if (commandInfo.MessageType == CqMessageType.Group)
-                            await Program.HttpSession.SendGroupMessageAsync(commandInfo.GroupId!.Value, new CqMessage(
-                                new CqAtMsg(commandInfo.SenderId),
-                                new CqMessage(" 消息过长，请在私聊中查看（如果您没有收到私聊消息，请检查是否允许陌生人私聊或添加好友）")));
+                            await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                                commandInfo.GroupId, commandInfo.MessageId,
+                                new CqMessage("消息过长，请在私聊中查看（如果您没有收到私聊消息，请检查是否允许陌生人私聊或添加好友）"));
                     }
                     else
                     {
-                        await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                            commandInfo.GroupId,
-                            new CqMessage(new CqAtMsg(commandInfo.SenderId), new CqMessage(hintMessage)));
+                        await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                            commandInfo.GroupId, commandInfo.MessageId,
+                            new CqMessage(hintMessage));
                     }
                 }
                 catch (Exception)
                 {
-                    hintMessage = " 私聊消息发送失败，请检查是否允许陌生人私聊或添加好友";
+                    hintMessage = "私聊消息发送失败，请检查是否允许陌生人私聊或添加好友";
                     batchState = PhigrosModuleOperationState.ERR_INTERNAL;
                 }
             }
 
             if (batchState != PhigrosModuleOperationState.SUCCESS)
-                await Program.HttpSession.SendMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
-                    commandInfo.GroupId,
-                    new CqMessage(new CqAtMsg(commandInfo.SenderId), new CqMessage(hintMessage)));
+                await Program.HttpSession.GenericReplyMessageAsync(commandInfo.MessageType, commandInfo.SenderId,
+                    commandInfo.GroupId, commandInfo.MessageId,
+                    new CqMessage(hintMessage));
         }
         catch (Exception ex)
         {

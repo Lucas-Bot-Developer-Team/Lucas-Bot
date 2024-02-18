@@ -10,9 +10,21 @@
 //    \::/  /      \::/  /      \:\__\        /:/  /       /:/  /       /:/  /      \:\__\    
 //     \/__/        \/__/        \/__/        \/__/        \/__/        \/__/        \/__/    
 
-namespace Lucas_Bot_OneBot.Modules.Amusement.YiYan;
+namespace Lucas_Bot_OneBot.Entities;
 
-public class EssenceAddEventListener
+/// <summary>
+/// 部署的平台
+/// </summary>
+public enum PlatformType
 {
-    
+    OPEN_SHAMROCK,       // 对应 OpenShamrock 实现
+    LAGRANGE_CORE,       // 对应 Lagrange.Core 实现
+    QQ_GUILD,       // 对应 Tencent Connect API 实现（ Gensokyo 提供协议转换 ）
+    // ↑ 由于 TX 官方把 QQ 频道砍废了，移植工作暂停进行
+    GENSOKYO_DISCORD,    // 对应 Gensokyo-Discord 实现到 Discord 协议的转换
+    ONEDISC,             // OneDisc OneBot实现，功能不完善，有待测试
+    // TELEGRAM,       // 目前暂不提供到 TG 的实现
+    GENSOKYO_KOOK,       // 对应 Gensokyo-Kook 实现到 Kook 的转换（可能考虑添加）
+    OLIVOS_FANBOOK,      // Fanbook 协议实现（ OlivOS 提供协议转换）
+    // 其他平台或许会加（要加的时候再适配
 }

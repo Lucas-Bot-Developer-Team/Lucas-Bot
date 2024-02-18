@@ -1,30 +1,11 @@
-﻿//
-//                       _oo0oo_
-//                      o8888888o
-//                      88" . "88
-//                      (| -_- |)
-//                      0\  =  /0
-//                    ___/`---'\___
-//                  .' \\|     |// '.
-//                 / \\|||  :  |||// \
-//                / _||||| -:- |||||- \
-//               |   | \\\  -  /// |   |
-//               | \_|  ''\---/''  |_/ |
-//               \  .-\__  '-'  ___/-. /
-//             ___'. .'  /--.--\  `. .'___
-//          ."" '<  `.___\_<|>_/___.' >' "".
-//         | | :  `- \`.;`\ _ /`;.`/ - ` : | |
-//         \  \ `_.   \_ __\ /__ _/   .-` /  /
-//     =====`-.____`.___ \_____/___.-`___.-'=====
-//                       `=---='
-//
-//
-//     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-//               佛祖保佑         永无BUG
-//
-//
-//
+﻿(*
+________                                             ______________ _____                                   ______________________                        
+__  ___/___  _____________ ___________________       ___  __ \__  /____(_)______ _____________________      ___  ____/_  ___/__  /_______ _______________ 
+_____ \_  / / /__  /_  __ `/_  __ \_  __ \  _ \________  /_/ /_  __ \_  /__  __ `/_  ___/  __ \_  ___/________  /_   _____ \__  __ \  __ `/_  ___/__  __ \
+____/ // /_/ /__  /_/ /_/ /_  / / /  / / /  __//_____/  ____/_  / / /  / _  /_/ /_  /   / /_/ /(__  )_/_____/  __/   ____/ /_  / / / /_/ /_  /   __  /_/ /
+/____/ \__,_/ _____/\__,_/ /_/ /_//_/ /_/\___/       /_/     /_/ /_//_/  _\__, / /_/    \____//____/        /_/      /____/ /_/ /_/\__,_/ /_/    _  .___/ 
+                                                                         /____/                                                                  /_/
+*)
 
 module Phigros_Library_FSharp.GameSaveUtil
 open GameSave
@@ -73,7 +54,7 @@ let rec _ConstructShortArrayFromLEB128Internal (result: int16 array) count consu
      | x when x <= 0 -> result, consumption
      | _ ->
          let firstByte = (int data[0]) &&& 255
-         match 7 |> GetBit firstByte with
+         match 7 |> GetBit firstByte with 
           | false -> data[1..]
                      |> _ConstructShortArrayFromLEB128Internal
                             ([| int16 (firstByte &&& 127) |] |> Array.append result)
@@ -195,13 +176,17 @@ let rec _ConstructGameRecordInternal gameRecordLength (gameRecord: List<SongReco
         data[consumption..]
         |> _ConstructGameRecordInternal (gameRecordLength - 1) (gameRecord @ [record])
 
-let ConstructGameRecord (data: byte array) = 
-    let gameRecordLength = int data[0]
+let ConstructGameRecord (data: byte array) =
+    let restData, length, consumption = data |> _ConstructIntFromLEB128
+    GameRecord(gameRecordVersion, restData
+                                   |> _ConstructGameRecordInternal length List.empty)
+    
+    (*let gameRecordLength = int data[0]
     match gameRecordLength >= 128 with
      | true -> GameRecord(gameRecordVersion, data[2..]
                                       |> _ConstructGameRecordInternal gameRecordLength List.empty)
      | _ -> GameRecord(gameRecordVersion, data[1..]
-                                      |> _ConstructGameRecordInternal gameRecordLength List.empty)
+                                      |> _ConstructGameRecordInternal gameRecordLength List.empty)*)
 let DeserializeGameRecord path =
     try   
         path

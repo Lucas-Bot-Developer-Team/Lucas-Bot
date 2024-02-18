@@ -1,5 +1,18 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿//      ___          ___          ___          ___          ___          ___          ___     
+//     /\  \        /\__\        /\  \        /\  \        /\__\        /\__\        /\  \    
+//    /::\  \      /:/  /        \:\  \      /::\  \      /::|  |      /::|  |      /::\  \   
+//   /:/\ \  \    /:/  /          \:\  \    /:/\:\  \    /:|:|  |     /:|:|  |     /:/\:\  \  
+//  _\:\~\ \  \  /:/  /  ___       \:\  \  /::\~\:\  \  /:/|:|  |__  /:/|:|  |__  /::\~\:\  \ 
+// /\ \:\ \ \__\/:/__/  /\__\_______\:\__\/:/\:\ \:\__\/:/ |:| /\__\/:/ |:| /\__\/:/\:\ \:\__\
+// \:\ \:\ \/__/\:\  \ /:/  /\::::::::/__/\/__\:\/:/  /\/__|:|/:/  /\/__|:|/:/  /\:\~\:\ \/__/
+//  \:\ \:\__\   \:\  /:/  /  \:\~~\~~         \::/  /     |:/:/  /     |:/:/  /  \:\ \:\__\  
+//   \:\/:/  /    \:\/:/  /    \:\  \          /:/  /      |::/  /      |::/  /    \:\ \/__/  
+//    \::/  /      \::/  /      \:\__\        /:/  /       /:/  /       /:/  /      \:\__\    
+//     \/__/        \/__/        \/__/        \/__/        \/__/        \/__/        \/__/    
 
+// See https://aka.ms/new-console-template for more information
+
+using System.Runtime.InteropServices;
 using Lucas_Bot_OneBot.Modules.Amusement.YiYan;
 
 namespace Lucas_Bot_OneBot.Core;
@@ -17,12 +30,14 @@ internal static class Program
 {
 
     // 配置全局Logger
-    public static ILog Logger { get; } = LogManager.GetLogger("Lucas-Bot-OneBot");
+#pragma warning disable CS8618
+    public static ILog Logger { get; private set; } 
+#pragma warning restore CS8618 
 
     // 初始化反向HTTP连接
     private static ICqPostSession RHttpSession { get; set; } = new CqRHttpSession(new CqRHttpSessionOptions()
     {
-        BaseUri = new Uri("http" + $"://{RHttpIpProvider.GetIpAddress()}:5900")
+        BaseUri = new Uri("http" + $"://{RHttpIpProvider.GetIpAddress()}:5900/")
     });
 
     // 初始化正向HTTP连接
@@ -34,13 +49,6 @@ internal static class Program
 
     private static void InitializeConfig()
     {
-        // 显示 Logo
-        var logo = Utilities.GetLogo();
-        foreach (var row in logo)
-        {
-            Logger.Info(row);
-        }
-        
         // 从 config.xml 读取配置信息
         if (File.Exists("config.xml"))
         {
@@ -51,7 +59,7 @@ internal static class Program
                 _botConfig = config;
                 if (_botConfig is null)
                 {
-                    throw new ArgumentNullException();
+                    throw new ArgumentNullException(nameof(_botConfig));
                 }
                 BotStatusHelper.ScheduledRebootTime = _botConfig.ScheduledRebootTime;
                 HttpSession = new CqHttpSession(new CqHttpSessionOptions()
@@ -80,7 +88,7 @@ internal static class Program
         {
             case ConnectionType.HTTP:
                 Logger.Info($"正向HTTP请求地址：{_botConfig!.HttpSessionProvider}");
-                Logger.Info($"反向HTTP请求地址：http://{RHttpIpProvider.GetIpAddress()}:5900");
+                Logger.Info($"反向HTTP请求地址：http://{RHttpIpProvider.GetIpAddress()}:5900/");
                 break;
             case ConnectionType.WEB_SOCKET:
                 var wsSession = new CqWsSession(new CqWsSessionOptions()
@@ -96,7 +104,7 @@ internal static class Program
             case ConnectionType.REVERSE_WEB_SOCKET:
                 var rWsSession = new CqRWsSession(new CqRWsSessionOptions()
                 {
-                    BaseUri = new Uri($"http://{RHttpIpProvider.GetIpAddress()}:5900"),
+                    BaseUri = new Uri($"http://{RHttpIpProvider.GetIpAddress()}:5900/"),
                     
                 });
                 HttpSession = rWsSession;
@@ -104,6 +112,8 @@ internal static class Program
             
                 Logger.Info($"反向 WebSocket 监听地址：{rWsSession.BaseUri}");
                 break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(type), type, null);
         }
             
         // 注册消息处理中间件
@@ -117,19 +127,23 @@ internal static class Program
         try
         {
             var info = await HttpSession.GetLoginInformationAsync();
+            if (info is null)
+            {
+                throw new TimeoutException("无法建立到 OneBot 协议端的连接");
+            }
             Logger.Info("当前登陆信息:");
-            Logger.Info($"Gensokyo 状态: {info!.Status.ToString()}");
-            Logger.Info($"Discord AppID: {info.UserId}");
+            Logger.Info($"OneBot 协议端状态: {info.Status.ToString()}");
+            Logger.Info($"User ID: {info.UserId}");
             Logger.Info($"昵称: {info.Nickname}");
             Logger.Info($"服务端返回的额外信息: {info.EchoData}");
         }
         catch (Exception ex)
         {
-            Logger.Error("尝试连接 Gensokyo 失败，进程将退出", ex);
+            Logger.Error("尝试连接 OneBot 协议端失败，进程将退出", ex);
             Environment.Exit(1);
         }
 
-        Logger.Info("已建立到 Gensokyo 的连接，机器人已上线");
+        Logger.Info("已建立到 OneBot 协议端的连接，机器人已上线");
         return;
 
         async Task StartSessionAsync(ICqPostSession session)
@@ -151,6 +165,8 @@ internal static class Program
                     Logger.Info("反向 WebSocket 连接已启动，将会等待 10 秒客户端启动时间");
                     await Task.Delay(10000);
                     break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(session));
             }
                 
         }
@@ -158,6 +174,20 @@ internal static class Program
     
     public static async Task Main(string[] args)
     {
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+        // 初始化 Logger
+        Logger = LogManager.GetLogger("Lucas-Bot-OneBot");
+        
+        // 显示 Logo
+        var logo = Utilities.GetLogo();
+        foreach (var row in logo)
+        {
+            Logger.Info(row);
+        }
+
+        Logger.Info($"Suzanne version {BotStatusHelper.GetVersion()}, Powered By {RuntimeInformation.FrameworkDescription}");
+        
         Logger.Info("Log4Net 已配置");
 
         if (args.Contains("-g") || args.Contains("--generate-config-file"))
@@ -178,13 +208,22 @@ internal static class Program
         }
         else
         {
-            CommandBuilder.RegisterCommandPrefix('!');
-            CommandBuilder.RegisterCommandPrefix('！');
+            // Specify Traditional QQ Bot Usage
+            if (_botConfig.DeployedPlatformType is PlatformType.OPEN_SHAMROCK or PlatformType.LAGRANGE_CORE)
+            {
+                CommandBuilder.RegisterCommandPrefix('!');
+                CommandBuilder.RegisterCommandPrefix('！');
+            }
+            // Not Traditional QQ Bot. Use '/' to trigger command.
+            else
+            {
+                CommandBuilder.RegisterCommandPrefix('/');
+            }
         }
         StopWatch.Start();
         Logger.Info("计时器已启动");
 
-        Utilities.InitMongoDbConnection(_botConfig.MongoDBAddress);
+        Utilities.InitMongoDbConnection(_botConfig.MongoDbAddress);
 
 
         // 账号绑定功能
@@ -212,16 +251,27 @@ internal static class Program
         CommandDispatcher.RegisterCommandHandler("long", IfYouAreADragon.DragonPictureProcessor);
         // 关于
         CommandDispatcher.RegisterCommandHandler("about", BotStatusHelper.AboutProcessor);
+        // 手动垃圾回收
+        if (_botConfig.DeployedPlatformType is not PlatformType.QQ_GUILD)
+        {
+            CommandDispatcher.RegisterCommandHandler("gc", NetMemoryHelper.GcProcessor);
+            CommandDispatcher.RegisterCommandHandler("reboot", BotStatusHelper.RebootProcessor);
+        }
+        else if (!_botConfig.IsInDebugMode) // 提审时切换为 Debug Mode, 防止隐藏指令被打回
+        {
+            CommandDispatcher.RegisterCommandHandler("gc", NetMemoryHelper.GcProcessor);
+            CommandDispatcher.RegisterCommandHandler("reboot", BotStatusHelper.RebootProcessor);
+        }
 
         // Test
-        if (!_botConfig.DeployedInDiscord)
+        if (_botConfig.DeployedPlatformType == PlatformType.OPEN_SHAMROCK)
             CommandDispatcher.RegisterCommandHandler("yiyan", YiYanProvider.YiYanProcessorTest, CommandHandlerType.GROUP_ONLY);
         
         // 配置程序停止时动作
         Console.CancelKeyPress += (_, _) =>
         {
             StopSession(RHttpSession);
-            Logger.Info("已断开和 Gensokyo 的连接，机器人已下线");
+            Logger.Info("已断开和 OneBot 协议端的连接，机器人已下线");
             StopWatch.Stop();
             Environment.Exit(0);
         };
@@ -229,15 +279,20 @@ internal static class Program
         InitializeConnection(_botConfig.ConnectionType);
 
         // 阻塞主线程，启动消息处理
-        if (_botConfig.IsInDebugMode)
+        Logger.Info($"Scheduled Reboot Enabled? {_botConfig.EnableScheduledReboot}");
+        if (_botConfig.EnableScheduledReboot)
         {
-            await Task.Delay(-1);
+            await Task.Delay(_botConfig.ScheduledRebootTime);
+            Logger.Warn("超过 config.xml 中的自动重启时间，应用将退出，请根据操作系统给配置自动重启（如使用systemd、脚本等）");
         }
         else
         {
-            await Task.Delay(_botConfig.ScheduledRebootTime);
+            await Task.Delay(-1);
         }
-        Logger.Warn("超过 config.xml 中的自动重启时间，应用将退出，请根据操作系统给配置自动重启（如使用systemd、脚本等）");
+
+        StopSession(RHttpSession);
+        
+        Logger.Info("已断开和 OneBot 协议端的连接，机器人已下线");
         return;
         
         void StopSession(ICqPostSession session)
@@ -261,4 +316,10 @@ internal static class Program
     {
         return StopWatch.Elapsed.StripMilliseconds();
     }
+
+    public static PlatformType GetDeployedPlatformType() => _botConfig!.DeployedPlatformType;
+
+    public static ConnectionType GetConnectionType() => _botConfig!.ConnectionType;
+    
+    public static string GetManagerId() => _botConfig!.BotManagerId;
 }
